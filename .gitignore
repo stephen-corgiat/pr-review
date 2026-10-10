@@ -1,0 +1,10 @@
+# Local-only spikes and prototypes
+/archive/
+
+# Built binaries
+/pr-review
+*.test
+*.out
+
+# Scratch and runtime state
+.scratch/
