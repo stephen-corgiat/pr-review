@@ -1,0 +1,41 @@
+{
+  "Request": {
+    "Number": 66,
+    "Head": "6ff8fff11ded1ac4e3b10ab114c916ba027e0330"
+  },
+  "Result": {
+    "Notes": {
+      "tldr": "Adds a guard to `applyDay`: if `lastQualifyingDay` already equals the day being processed, an `advance` changes nothing and pays no bonus. The rollover timer runs up to 5 times per day, so before this it paid 5 streak bonuses.",
+      "reading_order": [
+        {
+          "Path": "apps/api/src/tasks/daily-streak-engine.ts",
+          "Summary": "The whole fix: a 4-line early return on the advance path."
+        },
+        {
+          "Path": "apps/api/src/tasks/daily-streak-engine.spec.ts",
+          "Summary": "New unit case: advancing an already-processed day returns the same state and no bonus."
+        },
+        {
+          "Path": "apps/e2e/src/tests/daily-streak-rollover.spec.ts",
+          "Summary": "New e2e test: ticks the streak scheduler 5 times, expects exactly one bonus."
+        },
+        {
+          "Path": "docs/testing.md",
+          "Summary": "New section: jobs run by repeating timers must be safe to run repeatedly."
+        }
+      ],
+      "methods": {
+        "apps/api/src/tasks/daily-streak-engine.ts::applyDay": {
+          "does": "Takes the prior streak state and the day's result; returns the new state and any bonus.",
+          "changed": "On advance, does nothing when lastQualifyingDay already equals context.day."
+        }
+      }
+    },
+    "Run": {
+      "session_id": "2154db3b-f46f-4f9d-903c-f8c2f82b4c23",
+      "total_usd": 0.0536924,
+      "duration_ms": 15431,
+      "model": "claude-opus-5-5"
+    }
+  }
+}
