@@ -1,0 +1,54 @@
+{
+  "revisions": [
+    {
+      "feedback": "F1",
+      "for_body": "`strings.Contains(d, \"domain\")` <<quote the exact condition with its path:line>> also catches sender-side failures such as \"Sending domain not verified\" <<list the status/details values that would hit this branch>>. With the default hard-bounce action <<the setting name and its default>>, our own DNS mistake would blocklist healthy contacts. Could this match narrower phrases, or treat the rest as soft?",
+      "revision": {
+        "kind": "revision",
+        "gist": "Filled the exact condition, the values that reach it and the bounce.actions default.",
+        "revision": {
+          "revised_text": "`strings.Contains(d, \"domain\")` (beacon.go:184) also catches sender-side failures such as \"Sending domain not verified\". It applies to any report with status `failed` whose details contain \"domain\", have no SMTP 4.x.x/5.x.x code (beacon.go:171-176), and match none of the soft phrases (beacon.go:177-181). Such reports return a hard bounce. With the default `bounce.actions` (hard: count 1, action `blocklist`, schema.sql:19), our own DNS mistake would blocklist healthy contacts. Could this match narrower phrases, or treat the rest as soft?",
+          "what_changed": "Filled 3 Agent Notes: condition with line, matching status/details values, setting name and default"
+        },
+        "citations": [
+          "internal/bounce/webhooks/beacon.go:184",
+          "internal/bounce/webhooks/beacon.go:171-181",
+          "schema.sql:19"
+        ]
+      }
+    },
+    {
+      "feedback": "F2",
+      "for_body": "With no shared secret set <<the setting key and where the empty check happens>>, the webhook accepts any payload from anyone who can reach it. Worth a warning at startup, or a line in the settings help text <<the i18n key for that help text>>, so people know the endpoint is open?",
+      "revision": {
+        "kind": "revision",
+        "gist": "Filled the setting key, the empty-check location and the help-text i18n key.",
+        "revision": {
+          "revised_text": "With no shared secret set (`bounce.beacon.shared_secret` empty; `verifyAuth` returns nil early at internal/bounce/webhooks/beacon.go:118), the webhook accepts any payload from anyone who can reach it. Worth a warning at startup, or a line in the settings help text (`settings.bounces.beaconSecretHelp`, i18n/en.json:11), so people know the endpoint is open?",
+          "what_changed": "Filled 2 Agent Notes: setting key and check location, i18n help key"
+        },
+        "citations": [
+          "internal/bounce/webhooks/beacon.go:118",
+          "i18n/en.json:11"
+        ]
+      }
+    },
+    {
+      "feedback": "F4",
+      "for_body": "I think we talked about handling this the other way. Can we switch to that approach here too?",
+      "revision": {
+        "kind": "revision",
+        "gist": "Your intent is ambiguous: \"the other way\" isn't defined in anything I can see. Two questions.",
+        "revision": {
+          "questions": [
+            "Which approach did you have in mind? I can't see that conversation, so I can't say what \"the other way\" is.",
+            "Is this about how the Beacon case chooses between the handshake and the reports (the X-Beacon-Event header), or about auth in ProcessBounce?"
+          ]
+        },
+        "citations": [
+          "cmd/bounce.go:58"
+        ]
+      }
+    }
+  ]
+}

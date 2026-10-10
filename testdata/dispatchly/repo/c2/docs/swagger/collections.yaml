@@ -1,0 +1,14 @@
+paths:
+  /webhooks/bounce/{service}:
+    post:
+      summary: Receive a bounce notification from a mail provider
+      parameters:
+        - name: service
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [sendgrid, postmark, beacon]
+      responses:
+        "200":
+          description: The bounces were queued

@@ -1,0 +1,166 @@
+{
+  "delay_ms": 1500,
+  "tldr": "Adds a Beacon Relay bounce webhook at service \"beacon\": answers the handshake, checks an optional shared secret, and maps delivery reports to hard, soft or complaint bounces. Adds settings, a v1.3.0 migration and UI. An empty secret means no auth.",
+  "reading_order": [
+    {
+      "path": "internal/bounce/webhooks/beacon.go",
+      "summary": "Core: handshake, shared-secret check, event parsing, status-to-bounce-type mapping"
+    },
+    {
+      "path": "cmd/bounce.go",
+      "summary": "Routes beacon by the X-Beacon-Event header: handshake vs delivery reports"
+    },
+    {
+      "path": "internal/bounce/bounce.go",
+      "summary": "New Opt fields and Manager.Beacon wiring"
+    },
+    {
+      "path": "cmd/init.go",
+      "summary": "Reads bounce.beacon into Consts and the bounce Opt"
+    },
+    {
+      "path": "models/settings.go",
+      "summary": "New BounceBeacon settings struct"
+    },
+    {
+      "path": "cmd/settings.go",
+      "summary": "Masks the shared secret on read, keeps it when blank on update"
+    },
+    {
+      "path": "schema.sql",
+      "summary": "Default bounce.beacon settings row for fresh installs"
+    },
+    {
+      "path": "internal/migrations/v1.3.0.go",
+      "summary": "Upserts the bounce.beacon settings row for existing installs"
+    },
+    {
+      "path": "internal/migrations/migrations.go",
+      "summary": "Registers the v1.3.0 migration"
+    },
+    {
+      "path": "frontend/src/views/settings/bounces.vue",
+      "summary": "Beacon enable switch, secret and header inputs"
+    },
+    {
+      "path": "i18n/en.json",
+      "summary": "Labels and help text for the Beacon settings"
+    },
+    {
+      "path": "docs/docs/content/bounces.md",
+      "summary": "Setup instructions for the Beacon endpoint"
+    },
+    {
+      "path": "docs/swagger/collections.yaml",
+      "summary": "Adds beacon to the webhook service enum"
+    }
+  ],
+  "methods": {
+    "internal/bounce/webhooks/beacon.go::NewBeacon": {
+      "does": "Builds the handler with a trimmed secret and header name",
+      "changed": "New"
+    },
+    "internal/bounce/webhooks/beacon.go::(*Beacon).ProcessHandshake": {
+      "does": "Echoes Beacon's challenge back as JSON",
+      "changed": "New; no secret check on this path"
+    },
+    "internal/bounce/webhooks/beacon.go::(*Beacon).ProcessBounce": {
+      "does": "Verifies auth, parses the reports, returns a bounce for each failed one",
+      "changed": "New; matches by recipient email only"
+    },
+    "internal/bounce/webhooks/beacon.go::(*Beacon).verifyAuth": {
+      "does": "Accepts the secret in ?code= or in a custom header",
+      "changed": "New; returns nil when no secret is configured"
+    },
+    "internal/bounce/webhooks/beacon.go::secretsEqual": {
+      "does": "Constant-time compare, false on empty values",
+      "changed": "New"
+    },
+    "internal/bounce/webhooks/beacon.go::parseBeaconEvents": {
+      "does": "Parses the JSON array, keeping each event's raw JSON",
+      "changed": "New"
+    },
+    "internal/bounce/webhooks/beacon.go::mapBeaconStatus": {
+      "does": "Maps a report's status and details to hard, soft or complaint",
+      "changed": "New; an unknown \"failed\" defaults to soft"
+    },
+    "cmd/bounce.go::(*App).BounceWebhook": {
+      "does": "HTTP handler that turns a provider's webhook into queued bounces",
+      "changed": "New beacon case for the handshake and the reports"
+    },
+    "cmd/init.go::initBounceManager": {
+      "does": "Builds the bounce Opt from the settings",
+      "changed": "Passes Beacon enabled, secret and header"
+    },
+    "cmd/init.go::initConstConfig": {
+      "does": "Loads the settings that need a restart",
+      "changed": "Adds BounceBeaconEnabled"
+    },
+    "internal/bounce/bounce.go::New": {
+      "does": "Creates the bounce Manager and the enabled webhook providers",
+      "changed": "Creates the Beacon handler when BeaconEnabled"
+    },
+    "cmd/settings.go::(*App).GetSettings": {
+      "does": "Returns the settings with secrets masked",
+      "changed": "Masks the Beacon shared secret"
+    },
+    "cmd/settings.go::(*App).UpdateSettings": {
+      "does": "Saves the settings, restoring blank or masked secrets",
+      "changed": "Keeps the stored Beacon secret when blank"
+    },
+    "internal/migrations/v1.3.0.go::V1_3_0": {
+      "does": "Runs the v1.3.0 upgrade",
+      "changed": "New; upserts the bounce.beacon settings row"
+    }
+  },
+  "contract_changes": [
+    {
+      "category": "endpoint",
+      "title": "Webhook service \"beacon\" accepted; honours the X-Beacon-Event header and the ?code= secret",
+      "detail": "",
+      "at": "cmd/bounce.go:45-58",
+      "anchors": [
+        {
+          "path": "cmd/bounce.go",
+          "line": 45
+        }
+      ]
+    },
+    {
+      "category": "config",
+      "title": "New setting bounce.beacon {enabled, shared_secret, shared_secret_header}",
+      "detail": "",
+      "at": "models/settings.go:28-32",
+      "anchors": [
+        {
+          "path": "models/settings.go",
+          "line": 28
+        }
+      ]
+    },
+    {
+      "category": "schema",
+      "title": "Settings row bounce.beacon inserted or rewritten via upsert",
+      "detail": "",
+      "at": "internal/migrations/v1.3.0.go:7-15",
+      "anchors": [
+        {
+          "path": "internal/migrations/v1.3.0.go",
+          "line": 7
+        }
+      ]
+    },
+    {
+      "category": "signature",
+      "title": "Opt gains BeaconEnabled, BeaconSecret, BeaconSecretHeader; Manager gains Beacon",
+      "detail": "",
+      "at": "internal/bounce/bounce.go:22-24",
+      "anchors": [
+        {
+          "path": "internal/bounce/bounce.go",
+          "line": 22
+        }
+      ]
+    }
+  ]
+}

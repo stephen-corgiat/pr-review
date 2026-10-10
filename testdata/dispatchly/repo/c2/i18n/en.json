@@ -1,0 +1,13 @@
+{
+  "settings.bounces.enable": "Enable bounce processing",
+  "settings.bounces.enableWebhooks": "Enable bounce webhooks",
+  "settings.bounces.enableSendgrid": "Enable Sendgrid",
+  "settings.bounces.enablePostmark": "Enable Postmark",
+  "settings.bounces.sendgridKey": "Sendgrid key",
+  "settings.bounces.postmarkUsername": "Postmark username",
+  "settings.bounces.postmarkPassword": "Postmark password",
+  "settings.bounces.enableBeacon": "Enable Beacon",
+  "settings.bounces.beaconSecret": "Shared secret",
+  "settings.bounces.beaconSecretHelp": "Beacon sends this with every request. With no secret set, anyone who can reach the webhook can post bounces.",
+  "settings.bounces.beaconSecretHeader": "Secret header (optional)"
+}

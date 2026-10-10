@@ -1,0 +1,46 @@
+{
+  "feedback": [
+    {
+      "id": "F1",
+      "anchor": {
+        "type": "diff",
+        "path": "internal/bounce/webhooks/beacon.go",
+        "side": "new",
+        "lines": [
+          182,
+          187
+        ]
+      },
+      "status": "draft",
+      "body": "`strings.Contains(d, \"domain\")` <<quote the exact condition with its path:line>> also catches sender-side failures such as \"Sending domain not verified\" <<list the status/details values that would hit this branch>>. With the default hard-bounce action <<the setting name and its default>>, our own DNS mistake would blocklist healthy contacts. Could this match narrower phrases, or treat the rest as soft?"
+    },
+    {
+      "id": "F2",
+      "anchor": {
+        "type": "diff",
+        "path": "internal/bounce/webhooks/beacon.go",
+        "side": "new",
+        "lines": [
+          118,
+          120
+        ]
+      },
+      "status": "draft",
+      "body": "With no shared secret set <<the setting key and where the empty check happens>>, the webhook accepts any payload from anyone who can reach it. Worth a warning at startup, or a line in the settings help text <<the i18n key for that help text>>, so people know the endpoint is open?"
+    },
+    {
+      "id": "F4",
+      "anchor": {
+        "type": "diff",
+        "path": "cmd/bounce.go",
+        "side": "new",
+        "lines": [
+          58,
+          58
+        ]
+      },
+      "status": "draft",
+      "body": "I think we talked about handling this the other way. Can we switch to that approach here too?"
+    }
+  ]
+}

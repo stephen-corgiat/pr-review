@@ -1,0 +1,34 @@
+{
+  "repo_url": "https://github.com/acme/dispatchly.git",
+  "owner_repo": "acme/dispatchly",
+  "go_module": "github.com/acme/dispatchly",
+  "number": 214,
+  "url": "https://github.com/acme/dispatchly/pull/214",
+  "title": "Add Beacon bounce webhooks and settings support",
+  "author": "casey-dev",
+  "head_ref": "beacon-bounce-webhooks",
+  "base_ref": "main",
+  "created_at": "2026-03-12T09:30:00Z",
+  "merged_at": "2026-03-18T15:02:00Z",
+  "stats": {
+    "files": 13,
+    "additions": 276,
+    "deletions": 9
+  },
+  "files": [
+    "cmd/bounce.go",
+    "cmd/init.go",
+    "cmd/settings.go",
+    "docs/docs/content/bounces.md",
+    "docs/swagger/collections.yaml",
+    "frontend/src/views/settings/bounces.vue",
+    "i18n/en.json",
+    "internal/bounce/bounce.go",
+    "internal/bounce/webhooks/beacon.go",
+    "internal/migrations/migrations.go",
+    "internal/migrations/v1.3.0.go",
+    "models/settings.go",
+    "schema.sql"
+  ],
+  "description": "Beacon Relay is a mail relay with a small webhook API. This adds it as a bounce provider next to Sendgrid and Postmark.\n\nBeacon sends a handshake first and then batches of delivery reports. Its docs are thin on the `messageRef` field (the Message-ID header), so I match bounces by recipient email only. On my test account that worked.\n\nIs there anything I should do differently, or explain better in the docs?"
+}

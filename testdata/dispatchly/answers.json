@@ -1,0 +1,642 @@
+{
+  "answers": [
+    {
+      "id": "A01",
+      "kind": "define",
+      "anchors": [
+        {
+          "type": "diff",
+          "path": "cmd/bounce.go",
+          "side": "new",
+          "lines": [
+            51,
+            51
+          ],
+          "text": "X-Beacon-Event"
+        }
+      ],
+      "question": "What does “X-Beacon-Event” mean in this context?",
+      "seed": "answered_unread",
+      "answer": {
+        "kind": "define",
+        "gist": "An HTTP header Beacon Relay adds to each webhook call. It says whether the POST is the one-time handshake or a batch of delivery reports.",
+        "define": {
+          "term": "X-Beacon-Event",
+          "example": "X-Beacon-Event: handshake -> the handler echoes the challenge; any other value (or none) -> the body is parsed as delivery reports"
+        },
+        "detail": "The handler branches on it at `cmd/bounce.go:51`:\n- `handshake` goes to `ProcessHandshake`, which answers without checking the shared secret.\n- Anything else, including a missing header, goes to `ProcessBounce`, which checks the secret first.",
+        "citations": [
+          "cmd/bounce.go:51-57",
+          "internal/bounce/webhooks/beacon.go:66-77",
+          "internal/bounce/webhooks/beacon.go:81-113"
+        ],
+        "verified": false
+      }
+    },
+    {
+      "id": "A02",
+      "kind": "summarize",
+      "anchors": [
+        {
+          "type": "diff",
+          "path": "internal/bounce/webhooks/beacon.go",
+          "side": "new",
+          "lines": [
+            81,
+            113
+          ]
+        }
+      ],
+      "question": "What does ProcessBounce do, and what did this PR change in it?",
+      "seed": "answered",
+      "answer": {
+        "kind": "summarize",
+        "gist": "Checks the shared secret, parses a batch of Beacon reports, and turns each failed delivery into a bounce.",
+        "summarize": {
+          "changed": "New method: the whole Beacon handler is added by this PR."
+        },
+        "detail": "Skips a report if:\n- its type isn't `delivery.report`\n- `mapBeaconStatus` says it isn't a bounce (delivered, queued and so on)\n\nEach remaining report becomes one `models.Bounce` with source `beacon`, the lowercased recipient as the email and the raw event as meta. A report with no parseable time gets the current time.",
+        "citations": [
+          "internal/bounce/webhooks/beacon.go:81-113",
+          "internal/bounce/webhooks/beacon.go:141-156",
+          "internal/bounce/webhooks/beacon.go:160-190"
+        ],
+        "verified": false
+      }
+    },
+    {
+      "id": "A03",
+      "kind": "sample_data",
+      "anchors": [
+        {
+          "type": "diff",
+          "path": "internal/bounce/webhooks/beacon.go",
+          "side": "new",
+          "lines": [
+            160,
+            190
+          ]
+        }
+      ],
+      "question": "Show me the data flowing through mapBeaconStatus.",
+      "seed": "answered_unread",
+      "answer": {
+        "kind": "sample_data",
+        "gist": "The status is lowercased and mapped to a bounce type. Only \"failed\" looks at the details, and a mention of the domain makes it hard.",
+        "sample_data": {
+          "steps": [
+            {
+              "label": "complained -> complaint",
+              "at": "internal/bounce/webhooks/beacon.go:164",
+              "value": "mapBeaconStatus(\"Complained\", \"\") -> (\"complaint\", true)",
+              "lang": "go",
+              "source": "test"
+            },
+            {
+              "label": "suppressed -> hard",
+              "at": "internal/bounce/webhooks/beacon.go:166",
+              "value": "mapBeaconStatus(\"Suppressed\", \"\") -> (\"hard\", true)",
+              "lang": "go",
+              "source": "test"
+            },
+            {
+              "label": "failed + SMTP 5.x.x -> hard",
+              "at": "internal/bounce/webhooks/beacon.go:171-176",
+              "value": "mapBeaconStatus(\"Failed\", \"550 5.1.1 User unknown\") -> (\"hard\", true)",
+              "lang": "go",
+              "source": "test"
+            },
+            {
+              "label": "failed + SMTP 4.x.x -> soft",
+              "at": "internal/bounce/webhooks/beacon.go:171-176",
+              "value": "mapBeaconStatus(\"Failed\", \"452 4.2.2 Mailbox full\") -> (\"soft\", true)",
+              "lang": "go",
+              "source": "test"
+            },
+            {
+              "label": "failed + soft phrase -> soft",
+              "at": "internal/bounce/webhooks/beacon.go:177-181",
+              "value": "mapBeaconStatus(\"Failed\", \"Mailbox full\") -> (\"soft\", true)",
+              "lang": "go",
+              "source": "test"
+            },
+            {
+              "label": "failed + \"domain\" -> hard",
+              "at": "internal/bounce/webhooks/beacon.go:184",
+              "value": "mapBeaconStatus(\"Failed\", \"Sending domain not verified\") -> (\"hard\", true)",
+              "lang": "go",
+              "source": "test"
+            },
+            {
+              "label": "failed, nothing else -> soft",
+              "at": "internal/bounce/webhooks/beacon.go:187",
+              "value": "mapBeaconStatus(\"Failed\", \"Connection timed out\") -> (\"soft\", true)",
+              "lang": "go",
+              "source": "test"
+            },
+            {
+              "label": "complained ignores the details",
+              "at": "internal/bounce/webhooks/beacon.go:164",
+              "value": "mapBeaconStatus(\"Complained\", \"spam report\") -> (\"complaint\", true)",
+              "lang": "go",
+              "source": "invented"
+            },
+            {
+              "label": "delivered -> not a bounce",
+              "at": "internal/bounce/webhooks/beacon.go:188",
+              "value": "mapBeaconStatus(\"Delivered\", \"\") -> (\"\", false)",
+              "lang": "go",
+              "source": "test"
+            }
+          ]
+        },
+        "detail": "Ordering in the `failed` branch:\n- An SMTP code (`5.1.1`, `4.2.2`) wins over the keywords.\n- Soft phrases are checked next.\n- Only then does a `domain` mention make the bounce hard.\n\nSo a sender-side failure such as \"Sending domain not verified\" becomes a **hard** bounce, and with the default `bounce.actions` (hard: count 1, action `blocklist`, schema.sql:19) one such report blocklists the contact.",
+        "citations": [
+          "internal/bounce/webhooks/beacon.go:160-190",
+          "internal/bounce/webhooks/beacon.go:184",
+          "schema.sql:19"
+        ],
+        "verified": true,
+        "ran": [
+          {
+            "command": "cat > internal/bounce/webhooks/zz_probe_test.go <<'EOF'\npackage webhooks\n\nimport (\"fmt\"; \"testing\")\n\nfunc TestZZProbe(t *testing.T) {\n\t// prints mapBeaconStatus for eight status/details pairs\n}\nEOF\ngo test -run TestZZProbe -v ./internal/bounce/webhooks/",
+            "result": "Every row matches the reading, including the surprising one:\n\"Complained\" \"\"                               -> \"complaint\" true\n\"Suppressed\" \"\"                               -> \"hard\"     true\n\"Failed\"     \"550 5.1.1 User unknown\"         -> \"hard\"     true\n\"Failed\"     \"452 4.2.2 Mailbox full\"         -> \"soft\"     true\n\"Failed\"     \"Mailbox full\"                   -> \"soft\"     true\n\"Failed\"     \"Sending domain not verified\"    -> \"hard\"     true\n\"Failed\"     \"Connection timed out\"           -> \"soft\"     true\n\"Delivered\"  \"\"                               -> \"\"         false"
+          }
+        ]
+      }
+    },
+    {
+      "id": "A04",
+      "kind": "trace",
+      "anchors": [
+        {
+          "type": "diff",
+          "path": "cmd/bounce.go",
+          "side": "new",
+          "lines": [
+            58,
+            58
+          ]
+        },
+        {
+          "type": "diff",
+          "path": "internal/bounce/webhooks/beacon.go",
+          "side": "new",
+          "lines": [
+            94,
+            99
+          ]
+        }
+      ],
+      "question": "Trace this call: what reaches it, and what does ProcessBounce call?",
+      "answer": {
+        "kind": "trace",
+        "gist": "Beacon POSTs to the public /webhooks/bounce/beacon route; BounceWebhook reads the body, then ProcessBounce verifies the secret, parses the events and maps each status.",
+        "trace": {
+          "hops": [
+            {
+              "at": "cmd/main.go:60",
+              "fn": "POST /webhooks/bounce/{service}",
+              "text": "Public route, no login; BounceWebhook refuses it when bounce webhooks are off"
+            },
+            {
+              "at": "cmd/bounce.go:15",
+              "fn": "BounceWebhook",
+              "text": "Reads the body (capped at 1 MiB); service=beacon selects the Beacon case"
+            },
+            {
+              "at": "cmd/bounce.go:58",
+              "fn": "BounceWebhook (anchor)",
+              "text": "Any X-Beacon-Event other than handshake calls ProcessBounce"
+            },
+            {
+              "at": "internal/bounce/webhooks/beacon.go:82",
+              "fn": "(*Beacon).verifyAuth",
+              "text": "?code= or the configured header must equal the secret; skipped when none is set"
+            },
+            {
+              "at": "internal/bounce/webhooks/beacon.go:86",
+              "fn": "parseBeaconEvents",
+              "text": "Splits the JSON array and keeps each event's raw JSON"
+            },
+            {
+              "at": "internal/bounce/webhooks/beacon.go:96",
+              "fn": "mapBeaconStatus",
+              "text": "Per report: status and details to hard, soft or complaint, or not a bounce"
+            },
+            {
+              "at": "cmd/bounce.go:69",
+              "fn": "(*Manager).Enqueue",
+              "text": "Back in BounceWebhook, each bounce is queued; a full queue answers 503"
+            }
+          ]
+        },
+        "citations": [
+          "cmd/main.go:60",
+          "cmd/bounce.go:15-76",
+          "internal/bounce/webhooks/beacon.go:81-113"
+        ],
+        "detail": "The only caller is `BounceWebhook`, reached through the route above. `ProcessBounce` calls `verifyAuth`, `parseBeaconEvents` and `mapBeaconStatus`.",
+        "verified": false
+      },
+      "follow_ups": [
+        {
+          "kind": "sample_data",
+          "gist": "A failed delivery report for Ana@Example.com becomes one hard Bounce with source \"beacon\". Nothing in the repo tests this path.",
+          "sample_data": {
+            "steps": [
+              {
+                "label": "request",
+                "at": "cmd/main.go:60",
+                "value": "POST /webhooks/bounce/beacon?code=s3cret\nX-Beacon-Event: report",
+                "lang": "http",
+                "source": "spec",
+                "source_ref": "docs/docs/content/bounces.md:15"
+              },
+              {
+                "label": "body",
+                "at": "cmd/bounce.go:20",
+                "value": "[{\"id\":\"e1\",\"type\":\"delivery.report\",\"time\":\"2026-03-16T10:00:00Z\",\"data\":{\"recipient\":\"Ana@Example.com\",\"status\":\"failed\",\"details\":\"550 5.1.1 User unknown\"}}]",
+                "lang": "json",
+                "source": "invented"
+              },
+              {
+                "label": "verifyAuth",
+                "at": "internal/bounce/webhooks/beacon.go:82",
+                "value": "code = \"s3cret\"; b.secret = \"s3cret\" -> nil (accepted)",
+                "lang": "go",
+                "source": "invented"
+              },
+              {
+                "label": "mapBeaconStatus",
+                "at": "internal/bounce/webhooks/beacon.go:96",
+                "value": "mapBeaconStatus(\"failed\", \"550 5.1.1 User unknown\") -> (\"hard\", true)",
+                "lang": "go",
+                "source": "invented"
+              },
+              {
+                "label": "bounce",
+                "at": "internal/bounce/webhooks/beacon.go:107",
+                "value": "{\"email\":\"ana@example.com\",\"source\":\"beacon\",\"type\":\"hard\",\"created_at\":\"2026-03-16T10:00:00Z\"}",
+                "lang": "json",
+                "source": "invented"
+              }
+            ]
+          },
+          "citations": [
+            "cmd/bounce.go:20",
+            "internal/bounce/webhooks/beacon.go:81-113"
+          ],
+          "detail": "Real Beacon payloads may carry more fields than the handler reads: it uses only `type`, `time` and the `data` recipient, status and details.",
+          "verified": false
+        }
+      ]
+    },
+    {
+      "id": "A05",
+      "kind": "test_cases",
+      "anchors": [
+        {
+          "type": "file",
+          "path": "internal/bounce/webhooks/beacon.go"
+        }
+      ],
+      "question": "What tests cover this file? Which did this PR add or change?",
+      "answer": {
+        "kind": "test_cases",
+        "gist": "Confirmed: none of the three bounce packages has any coverage.",
+        "test_cases": {
+          "cases": [
+            {
+              "name": "Lists the webhook providers",
+              "at": "frontend/cypress/e2e/bounces.cy.js:3",
+              "text": "Turns on bounce webhooks in Settings and checks the Sendgrid and Postmark switches show; never touches the new Beacon switch.",
+              "status": "untouched"
+            }
+          ]
+        },
+        "detail": "```text\n\tgithub.com/acme/dispatchly/cmd\t\tcoverage: 0.0% of statements\n\tgithub.com/acme/dispatchly/internal/bounce\t\tcoverage: 0.0% of statements\n\tgithub.com/acme/dispatchly/internal/bounce/webhooks\t\tcoverage: 0.0% of statements\n\tgithub.com/acme/dispatchly/internal/core\t\tcoverage: 0.0% of statements\n\tgithub.com/acme/dispatchly/internal/migrations\t\tcoverage: 0.0% of statements\n?   \tgithub.com/acme/dispatchly/models\t[no test files]\n```\n\nUntested paths include `mapBeaconStatus` (its string-matching branches), `verifyAuth` (query versus header) and the handshake.",
+        "citations": [
+          "frontend/cypress/e2e/bounces.cy.js:3",
+          "internal/bounce/webhooks/beacon.go:1-190"
+        ],
+        "verified": true,
+        "ran": [
+          {
+            "command": "go test -cover ./...",
+            "result": "Confirmed: none of the three bounce packages has any coverage."
+          }
+        ]
+      }
+    },
+    {
+      "id": "A06",
+      "kind": "research",
+      "anchors": [
+        {
+          "type": "diff",
+          "path": "cmd/bounce.go",
+          "side": "new",
+          "lines": [
+            51,
+            57
+          ]
+        },
+        {
+          "type": "diff",
+          "path": "internal/bounce/webhooks/beacon.go",
+          "side": "new",
+          "lines": [
+            66,
+            77
+          ]
+        }
+      ],
+      "question": "Is the handshake checked against the shared secret?",
+      "seed": "answered_unread",
+      "answer": {
+        "kind": "research",
+        "gist": "Confirmed. With the secret set to `s3cret` and no secret sent, the handshake still succeeds:",
+        "research": {
+          "verdict": "no",
+          "why": "ProcessHandshake never calls verifyAuth; only ProcessBounce does, and BounceWebhook adds no auth before the switch.",
+          "evidence": [
+            "cmd/bounce.go:51-57",
+            "internal/bounce/webhooks/beacon.go:66-77",
+            "internal/bounce/webhooks/beacon.go:82"
+          ]
+        },
+        "detail": "Impact is low: the handshake only echoes back the `challenge` the caller supplied (internal/bounce/webhooks/beacon.go:66-77), and nothing is stored.\n\n```text\nProcessHandshake without secret: map[challenge:c4f1] err=<nil>\nProcessBounce without secret: err=invalid Beacon shared secret\n```",
+        "citations": [
+          "cmd/bounce.go:51-57",
+          "internal/bounce/webhooks/beacon.go:66-77",
+          "internal/bounce/webhooks/beacon.go:117-128"
+        ],
+        "verified": true,
+        "ran": [
+          {
+            "command": "cat > internal/bounce/webhooks/zz_probe_test.go <<'EOF'\npackage webhooks\n\nimport (\"fmt\"; \"net/http\"; \"net/url\"; \"testing\")\n\nfunc TestZZProbe(t *testing.T) {\n\tb := NewBeacon(\"s3cret\", \"X-Beacon-Secret\")\n\t// call ProcessHandshake and ProcessBounce without sending the secret\n}\nEOF\ngo test -run TestZZProbe -v ./internal/bounce/webhooks/",
+            "result": "Confirmed. With the secret set to s3cret and no secret sent, the handshake still succeeds."
+          }
+        ]
+      }
+    },
+    {
+      "id": "A07",
+      "kind": "research",
+      "anchors": [
+        {
+          "type": "diff",
+          "path": "cmd/settings.go",
+          "side": "new",
+          "lines": [
+            38,
+            40
+          ]
+        },
+        {
+          "type": "diff",
+          "path": "cmd/init.go",
+          "side": "new",
+          "lines": [
+            29,
+            36
+          ]
+        }
+      ],
+      "question": "If I change the Beacon secret in Settings, does it take effect without a restart?",
+      "answer": {
+        "kind": "research",
+        "gist": "No. UpdateSettings only replaces the stored settings; the Beacon handler was built once at startup with the old secret.",
+        "research": {
+          "verdict": "no",
+          "why": "initBounceManager copies the secret into webhooks.NewBeacon at boot, and nothing rebuilds the Manager afterwards.",
+          "evidence": [
+            "cmd/settings.go:25-44",
+            "cmd/init.go:22-37",
+            "internal/bounce/bounce.go:41-60"
+          ]
+        },
+        "detail": "The same is true of Sendgrid and Postmark, so the settings page should say a restart is needed. Today it doesn't.",
+        "citations": [
+          "cmd/settings.go:25-44",
+          "cmd/init.go:27-44",
+          "internal/bounce/bounce.go:41-60"
+        ],
+        "verified": false
+      }
+    },
+    {
+      "id": "A08",
+      "kind": "research",
+      "anchors": [
+        {
+          "type": "diff",
+          "path": "cmd/init.go",
+          "side": "new",
+          "lines": [
+            13,
+            13
+          ]
+        },
+        {
+          "type": "diff",
+          "path": "cmd/init.go",
+          "side": "new",
+          "lines": [
+            22,
+            22
+          ]
+        }
+      ],
+      "question": "Is Consts.BounceBeaconEnabled read anywhere?",
+      "answer": {
+        "kind": "research",
+        "gist": "No. It is set in initConstConfig and never read.",
+        "research": {
+          "verdict": "no",
+          "why": "BounceWebhook checks consts.BounceWebhooksEnabled and whether a.bounce.Beacon is nil, never BounceBeaconEnabled.",
+          "evidence": [
+            "cmd/init.go:13",
+            "cmd/init.go:22",
+            "cmd/bounce.go:16"
+          ]
+        },
+        "detail": "BounceSendgridEnabled and BouncePostmarkEnabled are in the same state, so this follows the existing pattern. The field could be dropped for all three.",
+        "citations": [
+          "cmd/init.go:13",
+          "cmd/init.go:22"
+        ],
+        "verified": false
+      }
+    },
+    {
+      "id": "A09",
+      "kind": "research",
+      "anchors": [
+        {
+          "type": "diff",
+          "path": "internal/migrations/v1.3.0.go",
+          "side": "new",
+          "lines": [
+            8,
+            12
+          ]
+        }
+      ],
+      "question": "Why an upsert here instead of INSERT … ON CONFLICT DO NOTHING? Who would it overwrite?",
+      "seed": "draft",
+      "answer": {
+        "kind": "research",
+        "gist": "The upsert resets bounce.beacon to the disabled defaults. It would overwrite a row someone added by hand.",
+        "research": {
+          "verdict": "partly",
+          "why": "DO UPDATE replaces an existing value; the earlier v1.2.0 migration used DO NOTHING for the Sendgrid and Postmark rows.",
+          "evidence": [
+            "internal/migrations/v1.3.0.go:8-10",
+            "internal/migrations/migrations.go:29"
+          ]
+        },
+        "detail": "The doc comment says it is so a hand-added setting \"keeps working\", but an upsert that rewrites the value does the opposite.",
+        "citations": [
+          "internal/migrations/v1.3.0.go:7-15"
+        ],
+        "verified": false
+      }
+    },
+    {
+      "id": "A10",
+      "kind": "summarize",
+      "anchors": [
+        {
+          "type": "diff",
+          "path": "cmd/init.go",
+          "side": "new",
+          "lines": [
+            27,
+            44
+          ]
+        }
+      ],
+      "question": "What does initBounceManager do, and what did this PR change in it?",
+      "answer": {
+        "kind": "summarize",
+        "gist": "Builds the bounce Manager from the settings; this PR passes the Beacon switch, secret and header through.",
+        "summarize": {
+          "changed": "Adds three Opt fields: BeaconEnabled, BeaconSecret and BeaconSecretHeader."
+        },
+        "detail": "It stops the process with a fatal log if `bounce.New` fails, as before. The Manager is built once, at startup.",
+        "citations": [
+          "cmd/init.go:27-44",
+          "internal/bounce/bounce.go:41-60"
+        ],
+        "verified": false
+      }
+    },
+    {
+      "id": "A11",
+      "kind": "define",
+      "anchors": [
+        {
+          "type": "description",
+          "text": "messageRef"
+        }
+      ],
+      "question": "What does “messageRef” mean in this context?",
+      "seed": "answered_unread",
+      "answer": {
+        "kind": "define",
+        "gist": "The field in a Beacon delivery report that carries the sent message's Message-ID header.",
+        "define": {
+          "term": "messageRef",
+          "example": "\"messageRef\": \"<20260316.1@mail.example.com>\""
+        },
+        "detail": "The handler declares the field in `beaconEvent` but never reads it, which is what the description means by matching on recipient email only.",
+        "citations": [
+          "internal/bounce/webhooks/beacon.go:36"
+        ],
+        "verified": false
+      }
+    },
+    {
+      "id": "A12",
+      "kind": "before_after",
+      "anchors": [
+        {
+          "type": "diff",
+          "path": "models/settings.go",
+          "side": "new",
+          "lines": [
+            28,
+            32
+          ]
+        },
+        {
+          "type": "diff",
+          "path": "cmd/settings.go",
+          "side": "new",
+          "lines": [
+            19,
+            19
+          ]
+        }
+      ],
+      "question": "How does the settings data for bounce webhooks look before and after this change?",
+      "answer": {
+        "kind": "before_after",
+        "gist": "The settings JSON gains a `bounce.beacon` object beside the other bounce providers. Existing keys are unchanged.",
+        "before_after": {
+          "before": {
+            "label": "before",
+            "at": "schema.sql:19-21",
+            "value": "{\"bounce.webhooks_enabled\": false, \"bounce.sendgrid\": {\"enabled\": false, \"key\": \"\"}, \"bounce.postmark\": {\"enabled\": false, \"username\": \"\", \"password\": \"\"}}",
+            "lang": "json",
+            "source": "spec",
+            "source_ref": "schema.sql:19-21"
+          },
+          "after": {
+            "label": "after",
+            "at": "schema.sql:22",
+            "value": "{\"bounce.webhooks_enabled\": false, \"bounce.sendgrid\": {…}, \"bounce.postmark\": {…}, \"bounce.beacon\": {\"enabled\": false, \"shared_secret\": \"\", \"shared_secret_header\": \"\"}}",
+            "lang": "json",
+            "source": "spec",
+            "source_ref": "schema.sql:22"
+          },
+          "note": "Existing installs get the row from the v1.3.0 migration; GET masks shared_secret, and a blank PUT keeps it."
+        },
+        "citations": [
+          "models/settings.go:28-32",
+          "schema.sql:22",
+          "internal/migrations/v1.3.0.go:7-15"
+        ],
+        "verified": false
+      }
+    },
+    {
+      "id": "A13",
+      "kind": "define",
+      "anchors": [
+        {
+          "type": "briefing",
+          "ref": "tldr",
+          "text": "Beacon Relay"
+        }
+      ],
+      "question": "What does “Beacon Relay” mean in this context?",
+      "seed": "draft",
+      "answer": {
+        "kind": "define",
+        "gist": "The third-party mail service this PR adds as a bounce provider.",
+        "define": {
+          "term": "Beacon Relay",
+          "example": "Beacon Relay POSTs delivery reports to /webhooks/bounce/beacon"
+        },
+        "detail": "It is a made-up provider in this fixture; the PR treats it like Sendgrid and Postmark.",
+        "citations": [
+          "docs/docs/content/bounces.md:15"
+        ],
+        "verified": false
+      }
+    }
+  ]
+}

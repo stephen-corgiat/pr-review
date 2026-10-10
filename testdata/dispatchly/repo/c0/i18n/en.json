@@ -1,0 +1,9 @@
+{
+  "settings.bounces.enable": "Enable bounce processing",
+  "settings.bounces.enableWebhooks": "Enable bounce webhooks",
+  "settings.bounces.enableSendgrid": "Enable Sendgrid",
+  "settings.bounces.enablePostmark": "Enable Postmark",
+  "settings.bounces.sendgridKey": "Sendgrid key",
+  "settings.bounces.postmarkUsername": "Postmark username",
+  "settings.bounces.postmarkPassword": "Postmark password"
+}
