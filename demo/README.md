@@ -1,6 +1,6 @@
 # The README demos
 
-Two GIFs, each rendered from a tape with [VHS](https://github.com/charmbracelet/vhs). Both re-enact reviewing [holocron](https://github.com/stephen-corgiat/holocron) PR #66.
+Two GIFs and a set of screenshots, each rendered from a tape with [VHS](https://github.com/charmbracelet/vhs). Both re-enact reviewing [holocron](https://github.com/stephen-corgiat/holocron) PR #66.
 
 - **`docs/media/demo.gif`** (1100×700, about 50 seconds), from `review.tape`: read the Briefing, select the streak advance in `applyDay` and ask for Sample Data, select the new guard and ask the agent to Define it, write Feedback that recommends a different approach and ends in an `<<example using …>>` placeholder, Refine it so the agent fills in the example, accept it, and send it.
 - **`docs/media/handoff.gif`** (1100×700), from `handoff.tape`: the same Feedback, handed to the Author's agent instead. Send it with **Hand to agent**, start Claude Code in the Author's checkout, run `/pull-review`, ask it to fix F1, commit, push and record the Outcome, then reopen the PR in pr-review: F1 shows `✓ addressed` with the commit and note, and `D` marks it done.
@@ -12,6 +12,12 @@ demo/render.sh record       # demo.gif, running the live agent for anything demo
 ```
 
 They need `ffmpeg`, a holocron checkout that has PR #66's commits (`$HOLOCRON_DIR`, default `~/Projects/holocron`) and the JetBrains Mono Nerd Font. The mise tasks fetch `vhs` and `ttyd`. A render builds `pr-review` from this checkout and uses a throwaway data directory and default settings, so it never touches your real Review Sessions.
+
+## The screenshots
+
+`demo/screenshots.tape` renders the README's walkthrough pictures (`mise run screenshots`). It repeats `review.tape`'s keystrokes exactly, because the replayed answers are matched on the Question, the anchored code and the Feedback text, on a taller terminal (1100×1300) so whole cards fit. It adds a **Trace** on the guard and opens the Revision in the editor with `e`, which shows the text the way you'd post it. Then `demo/crop.sh` cuts each raw shot (in `.scratch/shots/`, git-ignored) down with the boxes in `demo/crop.boxes`. The replay is deterministic, so the boxes are fixed pixel coordinates: if you change the tape or the terminal size, look at the raw shots and adjust them. It never writes `demo.gif`.
+
+A new Question needs a recording first. `demo/render.sh screenshots record` calls the live agent for whatever `demo/recording` lacks (the Trace cost about $0.26) and replays the rest. When you run it from inside a Claude Code session, clear the `CLAUDE*` environment variables first, or the agent's banner warns about an inherited session.
 
 ## How they stay repeatable
 

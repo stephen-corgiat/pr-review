@@ -4,11 +4,15 @@ A private terminal workspace for reviewing a Pull Request. Ask an agent question
 
 ![Reviewing a Pull Request in pr-review: ask the agent for Sample Data and to Define a selection, write Feedback with an <<example …>> placeholder, let the agent Refine it into a worked example, accept it, and send it as a GitHub review.](docs/media/demo.gif)
 
+**Jump to:** [Briefing](#read-the-briefing) · [Ask questions, get Sample Data, and trace calls](#ask-questions-get-sample-data-and-trace-calls) · [Write Feedback](#write-feedback) · [Refine it into a Revision](#refine-it-into-a-revision) · [Send it](#send-it) · [Hand Feedback to your agent](#hand-feedback-to-your-agent-to-improve-your-own-pr)
+
 pr-review isn't an auto-review bot. The agent answers the questions you ask and tightens the Feedback you write; you decide what to say. Feedback goes out as a GitHub review, or, when the PR is yours, straight to your coding agent.
 
 ## Install
 
-You need [git](https://git-scm.com), the [GitHub CLI](https://cli.github.com) (`gh auth login`) and [Claude Code](https://claude.com/claude-code), signed in, and Go 1.27 to build it. Linux and macOS work. Use a terminal with mouse support: [Ghostty](https://ghostty.org) is the reference.
+You need [git](https://git-scm.com), the [GitHub CLI](https://cli.github.com) signed in (`gh auth login`), [Claude Code](https://claude.com/claude-code) signed in, and Go 1.26+ to build it. Linux and macOS are supported.
+
+pr-review runs in your terminal and has mouse support: drag to select code, double-click a word, click a card to open it. It works in the common terminals, including macOS Terminal and Herdr.
 
 ```sh
 go install github.com/stephen-corgiat/pr-review@latest
@@ -31,13 +35,15 @@ Press `?` at any time for every key. `q` quits.
 
 ### Read the Briefing
 
-The Briefing opens first: a TL;DR, a reading order, and what each Touched Method does and what changed in it. Read it top to bottom, or jump around. `}` and `{` move between files, `J` and `K` between Touched Methods, and `]` and `[` step through every change in the PR.
+The Briefing opens first: a TL;DR, then a reading order that says what each changed file does. Read it top to bottom, or jump around. `}` and `{` move between files, `J` and `K` between Touched Methods, and `]` and `[` step through every change in the PR.
 
-![The Briefing: a TL;DR, a reading order and the Touched Methods.](docs/media/01-briefing.png)
+![The Briefing: a TL;DR and a reading order for the PR's four files.](docs/media/briefing.png)
 
-### Ask a Question
+### Ask questions, get Sample Data, and trace calls
 
-Select some code, by dragging, by double-clicking a word, or with `v` and `j`/`k` for whole lines. Then press a key for the kind of Question:
+Select some code, by dragging, by double-clicking a word, or with `v` and `j`/`k` for whole lines. The bar under the selection lists the Questions you can ask.
+
+![Selected lines of code with the action bar listing the Questions: define, summarize, data, trace, tests, ask, feedback, copy.](docs/media/selection.png)
 
 | Key | Asks the agent to |
 |---|---|
@@ -48,29 +54,39 @@ Select some code, by dragging, by double-clicking a word, or with `v` and `j`/`k
 | `c` | find the **Test Cases** that cover it |
 | `r` | answer a Question you type |
 
-The Answer shows up as a card right at the code. A ✅ means the agent ran something to confirm it, and a 📖 means it's from reading alone. The agent's running cost is in the footer.
+The Answer lands as a card right under the code, so you read it where it applies. A ✅ means the agent ran something to confirm it, and a 📖 means it's from reading the code alone. The agent's running cost is in the footer.
 
-![A Sample Data Answer as a card at the code it was asked about, marked 📖 because the agent only read the code.](docs/media/02-sample-data.png)
+![A Define Answer under the selected lines, with an example and links to the code it cites.](docs/media/define.png)
 
-![A Define Answer on a selected guard, with an example and links to the code it cites.](docs/media/03-define.png)
+**Sample Data** shows real values moving through the code, step by step, each linked to where it comes from:
+
+![A Sample Data Answer: the values of prior, nextCount and bonusTxn for a day that advances, and for a second tick on the same day.](docs/media/sample-data.png)
+
+**Trace** lists what reaches the selection and what it calls, each hop a link that jumps to the code:
+
+![A Trace Answer: seven hops from the rollover timer down to the guard.](docs/media/trace.png)
 
 ### Write Feedback
 
-Select the code and press `f`. Write the Feedback the way you'd say it, and leave a note for the agent wherever you'd rather it filled in a detail: `<<quote the exact condition with its path:line>>`. A card with the Feedback and its notes sits right at the code.
+Select the code and press `f`. Write the Feedback the way you'd say it, and leave a note for the agent wherever you'd rather it filled in a detail: `<<quote the exact condition with its path:line>>`.
 
-![A Feedback card on the selected lines, with one agent note still to fill in.](docs/media/04-feedback.png)
+![A Feedback card under the selected lines, with one agent note still to fill in.](docs/media/feedback.png)
 
-Press `r` on the card to ask the agent to **Refine** it. It fills in each note from the code, and you read the Revision before you accept it with `A`. Press `space` to mark the Feedback ready.
+### Refine it into a Revision
 
-![The agent's Revision of the Feedback: the note replaced by a worked example, with what changed and the code it cites.](docs/media/05-revision.png)
+Press `r` on the card to ask the agent to **Refine** it. It fills in each note from the code and shows you a Revision. Press `e` to read it as the text you would post, and edit it if you like. `A` accepts it into your Feedback, and `space` marks the Feedback ready.
+
+![The agent's Revision of the Feedback, with the note replaced by a worked example, open for editing.](docs/media/revision.png)
 
 ### Send it
 
 Press `P`. **GitHub review** posts your ready Feedback to the PR as a review. **Hand to agent** is for when you're the PR's Author: GitHub won't let you review your own PR, so the Feedback goes to your coding agent instead.
 
-![The send dialog: post to GitHub as a review, or hand the Feedback to an agent.](docs/media/06-send.png)
+![The send dialog: post to GitHub as a review, or hand the Feedback to an agent.](docs/media/send.png)
 
-## Hand Feedback to your agent
+## Hand Feedback to your agent, to improve your own PR
+
+Reviewing your own PR works the same way, with one difference: **Hand to agent** sends the Feedback to your coding agent, which makes the changes.
 
 ![Handing Feedback to an agent: send F1 with Hand to agent, run /pull-review in a Claude Code session on the PR's branch so it fixes F1, commits, pushes and records the Outcome, then reopen the PR in pr-review to see F1 addressed and mark it done.](docs/media/handoff.gif)
 

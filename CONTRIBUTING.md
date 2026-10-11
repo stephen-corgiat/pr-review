@@ -6,7 +6,7 @@ The domain vocabulary (Review Session, Touched Method, Feedback, Revision, …) 
 
 ## Building and testing
 
-You need Go 1.27 (`mise install` sets it up from `mise.toml`), git and `gh`.
+You need Go 1.26+ (`mise install` sets it up from `mise.toml`), git and `gh`.
 
 ```sh
 mise run install    # go install .
@@ -33,7 +33,7 @@ The tests never call the real agent or GitHub. They run on a fixture Pull Reques
 | `testdata/dispatchly/` | the fixture PR: a small made-up Go app and the agent's canned outputs (see its README) |
 | `tools/build_fixtures.py` | regenerates those canned outputs, resolving every line number from the source |
 | `skills/pull-review/` | the bundled `/pull-review` skill |
-| `demo/` | renders the README's GIFs with [VHS](https://github.com/charmbracelet/vhs) (`mise run demo-gif`; see `demo/README.md`) |
+| `demo/` | renders the README's GIFs and screenshots with [VHS](https://github.com/charmbracelet/vhs) (`mise run demo-gif`, `mise run screenshots`; see `demo/README.md`) |
 
 ## The fixture PR
 
