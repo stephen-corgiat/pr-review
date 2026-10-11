@@ -1,0 +1,163 @@
+{
+  "Request": {
+    "Number": 42,
+    "Head": "b28783d4264bd94cd278e34612acebce8aeff68f"
+  },
+  "Result": {
+    "Notes": {
+      "tldr": "Adds percent-off discount codes: one code per cart, checked against a hardcoded list (case-insensitive, expiry, minimum subtotal). Exposed through POST /cart/discount. The minimum is checked only when the code is applied. Free shipping still goes by the pre-discount subtotal.",
+      "reading_order": [
+        {
+          "Path": "cart/discount.go",
+          "Summary": "Discount type, error values, the three live codes, case-insensitive lookup."
+        },
+        {
+          "Path": "cart/cart.go",
+          "Summary": "ApplyDiscount, Savings and the new Total; the minimum is checked only at apply time."
+        },
+        {
+          "Path": "cart/discount_test.go",
+          "Summary": "Table tests at a pinned Oct 1, 2026, plus a test that a new code replaces the old."
+        },
+        {
+          "Path": "server/server.go",
+          "Summary": "New takes a clock; new route maps errors to 404/422; view adds code/savings."
+        },
+        {
+          "Path": "server/server_test.go",
+          "Summary": "Pinned clock; tests a successful apply plus the 422 and 404 errors."
+        },
+        {
+          "Path": "main.go",
+          "Summary": "Passes time.Now to server.New."
+        },
+        {
+          "Path": "README.md",
+          "Summary": "Documents the endpoint and how codes work."
+        }
+      ],
+      "methods": {
+        "cart/cart.go::(*Cart).ApplyDiscount": {
+          "does": "Checks code is known, unexpired and the cart meets its minimum, then stores it.",
+          "changed": "New. A failed apply leaves any existing code on the cart."
+        },
+        "cart/cart.go::(*Cart).Discount": {
+          "does": "Returns the cart's code and whether one is set.",
+          "changed": "New."
+        },
+        "cart/cart.go::(*Cart).Savings": {
+          "does": "Subtotal times PercentOff / 100, rounded down; zero with no code.",
+          "changed": "New. Doesn't recheck the minimum after items are removed."
+        },
+        "cart/cart.go::(*Cart).Total": {
+          "does": "Subtotal minus savings plus shipping.",
+          "changed": "Now subtracts Savings; shipping still uses the pre-discount subtotal."
+        },
+        "cart/discount.go::day": {
+          "does": "Returns midnight UTC on the given date.",
+          "changed": "New. Codes expire at the start of the listed day."
+        },
+        "cart/discount.go::lookupCode": {
+          "does": "Finds a code in the hardcoded list, ignoring case and surrounding spaces.",
+          "changed": "New."
+        },
+        "cart/discount_test.go::TestApplyDiscount": {
+          "does": "Table: percent off, any case, below minimum, expired, unknown, plus shipping.",
+          "changed": "New."
+        },
+        "cart/discount_test.go::TestApplyDiscountReplaces": {
+          "does": "Applies WELCOME10 then BOOKWORM20; expects BOOKWORM20 to stay.",
+          "changed": "New. Ignores ApplyDiscount's errors."
+        },
+        "main.go::main": {
+          "does": "Starts the server on :8080.",
+          "changed": "Passes time.Now as the clock."
+        },
+        "server/server.go::(*Server).Routes": {
+          "does": "Registers the API's routes.",
+          "changed": "Adds POST /cart/discount."
+        },
+        "server/server.go::(*Server).applyDiscount": {
+          "does": "Decodes {code}, applies it: 400 bad body, 404 unknown, 422 otherwise.",
+          "changed": "New."
+        },
+        "server/server.go::New": {
+          "does": "Builds a Server with a catalog and an empty cart map.",
+          "changed": "Now takes a now func() time.Time clock argument."
+        },
+        "server/server.go::view": {
+          "does": "Builds the cart's JSON view.",
+          "changed": "Adds code and savings fields, both left out when empty."
+        },
+        "server/server_test.go::TestApplyDiscount": {
+          "does": "Applies bookworm20 to a $64 cart; expects savings 1280, total 5120.",
+          "changed": "New."
+        },
+        "server/server_test.go::TestDiscountErrors": {
+          "does": "Checks a below-minimum code gets 422 and an unknown code gets 404.",
+          "changed": "New. No endpoint test for an expired code."
+        },
+        "server/server_test.go::newShopper": {
+          "does": "Builds a test server and a client that keeps the cart cookie.",
+          "changed": "Pins the clock to Oct 1, 2026."
+        }
+      },
+      "contract_changes": [
+        {
+          "Category": "endpoint",
+          "Title": "New POST /cart/discount {\"code\"}: 200 with cart view, 400, 404 or 422.",
+          "Detail": "",
+          "Anchors": [
+            {
+              "Path": "server/server.go",
+              "Line": 37
+            }
+          ],
+          "Computed": false
+        },
+        {
+          "Category": "schema",
+          "Title": "Cart JSON gains optional `code` and `savings`, left out when empty or zero.",
+          "Detail": "",
+          "Anchors": [
+            {
+              "Path": "server/server.go",
+              "Line": 70
+            }
+          ],
+          "Computed": false
+        },
+        {
+          "Category": "signature",
+          "Title": "server.New(cat) becomes server.New(cat, now func() time.Time); breaks existing callers.",
+          "Detail": "",
+          "Anchors": [
+            {
+              "Path": "server/server.go",
+              "Line": 26
+            }
+          ],
+          "Computed": false
+        },
+        {
+          "Category": "signature",
+          "Title": "New exported Cart.ApplyDiscount/Discount/Savings, Discount type and three Err* values.",
+          "Detail": "",
+          "Anchors": [
+            {
+              "Path": "cart/cart.go",
+              "Line": 76
+            }
+          ],
+          "Computed": false
+        }
+      ]
+    },
+    "Run": {
+      "session_id": "68625cdb-2b41-4d0c-9fc5-f6a6cafccd12",
+      "total_usd": 0.154491,
+      "duration_ms": 31961,
+      "model": "claude-opus-5-5"
+    }
+  }
+}

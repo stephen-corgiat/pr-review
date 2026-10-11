@@ -3,9 +3,9 @@
 # records the Outcome; back in pr-review, the Feedback says what happened.
 #
 # Render it with `mise run demo-gif-handoff` (see demo/README.md). The pr-review
-# side replays demo/recording; the Claude Code session is live. It runs in a
-# throwaway clone of holocron ($DEMO_CHECKOUT) whose pushes go to a local bare
-# repo, so nothing reaches GitHub.
+# side replays demo/recording; the Claude Code session is live. It runs in the
+# made-up repo render.sh builds ($DEMO_REPO), on the PR's branch, and its
+# pushes go to a local bare repo, so nothing reaches GitHub.
 #
 # Claude's turn runs between Hide and Show; its end is Claude Code's
 # "· done <clock>" line.
@@ -24,18 +24,16 @@ Set TypingSpeed 45ms
 Set WaitTimeout 120s
 
 Hide
-Type `cd "$DEMO_CHECKOUT" && export PATH="$DEMO_BIN:$PATH" PS1='$ '` Enter
-# Deny anything that reaches past the clone: render.sh also points docker
-# compose and Postgres nowhere, so these fail even if a rule misses.
-Type `claude() { command claude --model claude-opus-5-5 --setting-sources project --permission-mode auto --disallowedTools "Bash(docker *)" "Bash(npm run e2e*)" "Bash(npm --workspace apps/e2e *)" "Bash(npx playwright *)" "Bash(npm run migration*)" "Bash(npm --workspace apps/api run migration*)" "$@"; }` Enter
+Type `export PATH="$DEMO_PATH:$PATH" PS1='$ ' && cd "$DEMO_REPO"` Enter
+Type `claude() { command claude --model claude-opus-5-5 --setting-sources project --permission-mode auto "$@"; }` Enter
 Type "clear" Enter
 
 # Off camera: the Feedback from the first demo, refined and accepted.
-Type "pr-review 66" Enter
+Type "pr-review 42" Enter
 Wait+Screen /\$0\.(0[1-9]|[1-9])/
-Type "jj" Enter
+Type "jjj" Enter
 Sleep 1s
-Type "/prior.lastQualifyingDay ===" Enter
+Type "/if c.Subtotal() < d.MinSubtotal" Enter
 Sleep 500ms
 Escape
 Sleep 500ms
@@ -43,7 +41,7 @@ Type "vjj"
 Sleep 300ms
 Type "f"
 Sleep 500ms
-Type@5ms "Prefer a db guard here rather than comparing in code: <<example using the transactions table and a unique index>>"
+Type@5ms "Removing a book after this check keeps the discount, even below the minimum. Check it when pricing instead: <<example in Total>>"
 Enter
 Sleep 500ms
 Type " "
@@ -79,9 +77,9 @@ Type "claude"
 Sleep 800ms
 Enter
 Hide
-# The clone is a new folder, so Claude Code asks whether to trust it. holocron's
-# .claude/settings.json pre-approves tools, which makes "No, exit" the default:
-# move to "Yes" explicitly. Then wait for the session before typing into it.
+# The repo is a new folder, so Claude Code asks whether to trust it, and "No,
+# exit" is the default: move to "Yes" explicitly (a number key doesn't pick
+# it). Then wait for the session before typing into it.
 Wait+Screen@60s /Yes, I trust this folder/
 # The prompt draws before it reads keys: a Down sent at once is lost.
 Sleep 1500ms
@@ -99,7 +97,7 @@ Sleep 1000ms
 # above it is folded or scrolled.
 Type "/pull-review"
 Sleep 1000ms
-Type " Fix F1, commit and push, then record the outcome."
+Type " Address the feedback in the review."
 Sleep 1000ms
 Enter
 Hide
@@ -114,7 +112,7 @@ Type "/exit" Enter
 Sleep 2s
 Type "clear" Enter
 Show
-Type "pr-review 66"
+Type "pr-review 42"
 Sleep 800ms
 Enter
 Sleep 2500ms

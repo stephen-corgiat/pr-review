@@ -15,7 +15,7 @@ tools = { vhs = "0.12.1", ttyd = "latest" }
 run = "demo/render.sh"
 
 [tasks.demo-gif-handoff]
-description = "Re-render docs/media/handoff.gif from demo/handoff.tape (runs a live Claude Code session; see demo/README.md)"
+description = "Re-render docs/media/handoff.gif from demo/handoff.tape (runs a live Claude Code session on the made-up demo repo; see demo/README.md)"
 tools = { vhs = "0.12.1", ttyd = "latest" }
 run = "demo/render.sh handoff"
 
