@@ -1,0 +1,9 @@
+# name  width height x y   (a box of the raw 1100x1300 shot .scratch/shots/NAME.png)
+briefing     775 462  305  28
+selection    775 296  305 205
+define       775 482  305 395
+sample-data  642 832  422 396
+trace        642 752  422 498
+feedback     775 262  305 395
+revision     775 455  305 415
+send         980 425   55 435

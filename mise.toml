@@ -18,3 +18,8 @@ run = "demo/render.sh"
 description = "Re-render docs/media/handoff.gif from demo/handoff.tape (runs a live Claude Code session; see demo/README.md)"
 tools = { vhs = "0.12.1", ttyd = "latest" }
 run = "demo/render.sh handoff"
+
+[tasks.screenshots]
+description = "Re-render the README screenshots from demo/screenshots.tape (replays demo/recording; see demo/README.md)"
+tools = { vhs = "0.12.1", ttyd = "latest" }
+run = "demo/render.sh screenshots"

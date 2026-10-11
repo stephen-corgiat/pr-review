@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # Render a README demo GIF from its tape.
 #
-#   demo/render.sh [review|handoff] [record]
+#   demo/render.sh [review|handoff|screenshots] [record]
 #
 #   review    docs/media/demo.gif from demo/review.tape (the default)
+#   screenshots  the README's screenshots from demo/screenshots.tape, cropped by
+#             demo/crop.sh into docs/media/; it never writes demo.gif
 #   handoff   docs/media/handoff.gif from demo/handoff.tape: hand the Feedback to
 #             a live Claude Code session, which runs /pull-review and fixes it
 #   record    run the live agent for whatever demo/recording lacks
@@ -21,9 +23,9 @@ root=$(cd "$(dirname "$0")/.." && pwd)
 tape=review mode=replay
 for a in "$@"; do
 	case $a in
-	review | handoff) tape=$a ;;
+	review | handoff | screenshots) tape=$a ;;
 	record) mode=record ;;
-	*) echo "usage: demo/render.sh [review|handoff] [record]" >&2 && exit 2 ;;
+	*) echo "usage: demo/render.sh [review|handoff|screenshots] [record]" >&2 && exit 2 ;;
 	esac
 done
 export HOLOCRON_DIR=${HOLOCRON_DIR:-$HOME/Projects/holocron}
@@ -68,5 +70,10 @@ if [ "$tape" = handoff ]; then
 fi
 
 cd "$root"
+mkdir -p .scratch/shots
 vhs "demo/$tape.tape"
-ls -l "docs/media/$([ "$tape" = review ] && echo demo || echo handoff).gif"
+case $tape in
+review) ls -l docs/media/demo.gif ;;
+handoff) ls -l docs/media/handoff.gif ;;
+screenshots) demo/crop.sh ;;
+esac
