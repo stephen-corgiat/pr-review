@@ -1,5 +1,5 @@
 [tools]
-go = "1.27"
+go = "1.26"
 
 [tasks.install]
 description = "Build pr-review and install it into $(go env GOPATH)/bin"

@@ -10,7 +10,7 @@ pr-review isn't an auto-review bot. The agent answers the questions you ask and 
 
 ## Install
 
-You need [git](https://git-scm.com), the [GitHub CLI](https://cli.github.com) signed in (`gh auth login`), [Claude Code](https://claude.com/claude-code) signed in, and Go 1.27+ to build it. Linux and macOS are supported.
+You need [git](https://git-scm.com), the [GitHub CLI](https://cli.github.com) signed in (`gh auth login`), [Claude Code](https://claude.com/claude-code) signed in, and Go 1.26+ to build it. Linux and macOS are supported.
 
 pr-review runs in your terminal and has mouse support: drag to select code, double-click a word, click a card to open it. It works in the common terminals, including macOS Terminal and Herdr.
 

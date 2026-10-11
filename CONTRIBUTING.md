@@ -6,7 +6,7 @@ The domain vocabulary (Review Session, Touched Method, Feedback, Revision, …) 
 
 ## Building and testing
 
-You need Go 1.27 (`mise install` sets it up from `mise.toml`), git and `gh`.
+You need Go 1.26+ (`mise install` sets it up from `mise.toml`), git and `gh`.
 
 ```sh
 mise run install    # go install .
