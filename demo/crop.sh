@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Cut the raw screenshots from demo/screenshots.tape (.scratch/shots/, 1100x1300) down to
+# Cut the raw screenshots from demo/screenshots.tape (.scratch/shots/, 1600x1800) down to
 # the pictures in docs/media/. The replay is deterministic, so fixed crop boxes work; if
 # you change the tape or the terminal size, look at the raw shots and adjust the boxes.
 set -euo pipefail

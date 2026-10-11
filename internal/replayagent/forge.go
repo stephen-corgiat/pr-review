@@ -11,11 +11,11 @@ import (
 	"github.com/stephen-corgiat/pr-review/internal/forge"
 )
 
-// Forge is the demo's GitHub: it re-enacts a review of a PR that has since
-// been merged. PR metadata comes from forge.json in Dir (written by a
-// recording run from the real Forge), always as an open PR; the login is
-// fixed; comments are empty; and nothing is ever posted: PostReview
-// pretends, in recording too.
+// Forge is the demo's GitHub: it re-enacts a review of a PR, always as an
+// open PR. PR metadata comes from forge.json in Dir, which may be written by
+// hand (the demo's PR is made up) or, when it's missing, by a recording run
+// from the real Forge. The login is fixed; comments are empty; and nothing is
+// ever posted: PostReview pretends, in recording too.
 type Forge struct {
 	Inner  forge.Forge // only used to record
 	Dir    string
@@ -28,7 +28,7 @@ const DemoLogin = "demo-reviewer"
 func (f Forge) file() string { return filepath.Join(f.Dir, "forge.json") }
 
 func (f Forge) PR(ctx context.Context, number int) (forge.PR, error) {
-	if f.Record {
+	if _, err := os.Stat(f.file()); f.Record && err != nil {
 		pr, err := f.Inner.PR(ctx, number)
 		if err != nil {
 			return pr, err
@@ -60,7 +60,7 @@ func (f Forge) load() (forge.PR, error) {
 }
 
 func (f Forge) PRForBranch(ctx context.Context, branch string) (int, error) {
-	if f.Record {
+	if _, err := os.Stat(f.file()); f.Record && err != nil {
 		return f.Inner.PRForBranch(ctx, branch)
 	}
 	pr, err := f.load()

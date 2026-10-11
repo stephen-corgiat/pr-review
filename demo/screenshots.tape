@@ -11,18 +11,18 @@ Require pr-review
 Set Shell bash
 Set FontFamily "JetBrainsMono Nerd Font, DejaVu Sans Mono"
 Set FontSize 15
-Set Width 1100
-Set Height 1300
+Set Width 1600
+Set Height 1800
 Set Padding 8
 Set TypingSpeed 45ms
 Set WaitTimeout 400s
 
 Hide
-Type "cd $HOLOCRON_DIR && PS1='$ ' && clear" Enter
+Type `export PATH="$DEMO_PATH:$PATH" PS1='$ ' && cd "$DEMO_REPO" && clear` Enter
 Show
 
 # Open the PR; the Briefing arrives.
-Type "pr-review 66"
+Type "pr-review 42"
 Sleep 1500ms
 Enter
 Sleep 1200ms
@@ -32,24 +32,24 @@ Show
 Sleep 4000ms
 Screenshot .scratch/shots/briefing.png
 
-# Open the file with the fix.
-Type "jj"
+# Open the cart, where the code is applied and the Total priced.
+Type "jjj"
 Sleep 400ms
 Enter
 Sleep 1800ms
 
-# Select the streak advance and ask for Sample Data flowing through it.
-Type@20ms "/const nextCount"
+# Select the new Total and ask for Sample Data flowing through it.
+Type@20ms "/subtotal := c.Subtotal"
 Enter
 Sleep 600ms
 Escape
 Sleep 300ms
-Type@40ms "vjjjjjjjjjjjj"
+Type@40ms "vjjjj"
 Sleep 1200ms
 Type "x"
 Sleep 1200ms
 Hide
-Wait+Screen /Sample Data[^\n]*answered/
+Wait+Screen /● 1 new/
 Show
 Type "z"
 Sleep 800ms
@@ -59,8 +59,8 @@ Screenshot .scratch/shots/sample-data.png
 Type "z"
 Sleep 800ms
 
-# Select the guard and ask what it means.
-Type@20ms "/prior.lastQualifyingDay ==="
+# Select the minimum-subtotal check and ask what it means.
+Type@20ms "/if c.Subtotal() < d.MinSubtotal"
 Enter
 Sleep 600ms
 Escape
@@ -81,7 +81,7 @@ Screenshot .scratch/shots/define.png
 # only the Trace opens.
 Type "z"
 Sleep 500ms
-Type@20ms "/prior.lastQualifyingDay ==="
+Type@20ms "/if c.Subtotal() < d.MinSubtotal"
 Enter
 Sleep 600ms
 Escape
@@ -103,7 +103,7 @@ Type "z"
 Sleep 600ms
 
 # Write Feedback on the same lines, asking for an example.
-Type@20ms "/prior.lastQualifyingDay ==="
+Type@20ms "/if c.Subtotal() < d.MinSubtotal"
 Enter
 Sleep 600ms
 Escape
@@ -112,7 +112,7 @@ Type "vjj"
 Sleep 800ms
 Type "f"
 Sleep 600ms
-Type@35ms "Prefer a db guard here rather than comparing in code: <<example using the transactions table and a unique index>>"
+Type@35ms "Removing a book after this check keeps the discount, even below the minimum. Check it when pricing instead: <<example in Total>>"
 Sleep 800ms
 Enter
 Sleep 1200ms
@@ -131,15 +131,8 @@ Hide
 Sleep 10s
 Show
 Type "j"
-Sleep 600ms
-Type "e"
-Sleep 1000ms
-# The editor opens with the cursor at the end; go back to the top so the text starts in view.
-Up 60
-Ctrl+A
-Sleep 800ms
+Sleep 1500ms
 Screenshot .scratch/shots/revision.png
-Escape
 Sleep 600ms
 Type "A"
 Sleep 1500ms

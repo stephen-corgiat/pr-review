@@ -37,13 +37,13 @@ Press `?` at any time for every key. `q` quits.
 
 The Briefing opens first: a TL;DR, then a reading order that says what each changed file does. Read it top to bottom, or jump around. `}` and `{` move between files, `J` and `K` between Touched Methods, and `]` and `[` step through every change in the PR.
 
-![The Briefing: a TL;DR and a reading order for the PR's four files.](docs/media/briefing.png)
+![The Briefing: a TL;DR, a reading order for the PR's seven files, and the contract changes it makes.](docs/media/briefing.png)
 
 ### Ask questions, get Sample Data, and trace calls
 
 Select some code, by dragging, by double-clicking a word, or with `v` and `j`/`k` for whole lines. The bar under the selection lists the Questions you can ask.
 
-![Selected lines of code with the action bar listing the Questions: define, summarize, data, trace, tests, ask, feedback, copy.](docs/media/selection.png)
+![Selected lines of code with the action bar listing the Questions: Define, Summarize, Sample Data, Trace, Test Cases, Ask, Feedback, Copy.](docs/media/selection.png)
 
 | Key | Asks the agent to |
 |---|---|
@@ -56,15 +56,15 @@ Select some code, by dragging, by double-clicking a word, or with `v` and `j`/`k
 
 The Answer lands as a card right under the code, so you read it where it applies. A ✅ means the agent ran something to confirm it, and a 📖 means it's from reading the code alone. The agent's running cost is in the footer.
 
-![A Define Answer under the selected lines, with an example and links to the code it cites.](docs/media/define.png)
+![A Define Answer under the selected minimum-subtotal check, with an example and links to the code it cites.](docs/media/define.png)
 
 **Sample Data** shows real values moving through the code, step by step, each linked to where it comes from:
 
-![A Sample Data Answer: the values of prior, nextCount and bonusTxn for a day that advances, and for a second tick on the same day.](docs/media/sample-data.png)
+![A Sample Data Answer: a cart with two $32 books and BOOKWORM20, and the subtotal, savings, shipping and total it comes to.](docs/media/sample-data.png)
 
 **Trace** lists what reaches the selection and what it calls, each hop a link that jumps to the code:
 
-![A Trace Answer: seven hops from the rollover timer down to the guard.](docs/media/trace.png)
+![A Trace Answer: seven hops from the POST /cart/discount route down to the minimum-subtotal check.](docs/media/trace.png)
 
 ### Write Feedback
 
@@ -76,7 +76,7 @@ Select the code and press `f`. Write the Feedback the way you'd say it, and leav
 
 Press `r` on the card to ask the agent to **Refine** it. It fills in each note from the code and shows you a Revision. Press `e` to read it as the text you would post, and edit it if you like. `A` accepts it into your Feedback, and `space` marks the Feedback ready.
 
-![The agent's Revision of the Feedback, with the note replaced by a worked example, open for editing.](docs/media/revision.png)
+![The agent's Revision of the Feedback, with the note replaced by a worked example and the changed words highlighted.](docs/media/revision.png)
 
 ### Send it
 
@@ -88,7 +88,7 @@ Press `P`. **GitHub review** posts your ready Feedback to the PR as a review. **
 
 Reviewing your own PR works the same way, with one difference: **Hand to agent** sends the Feedback to your coding agent, which makes the changes.
 
-![Handing Feedback to an agent: send F1 with Hand to agent, run /pull-review in a Claude Code session on the PR's branch so it fixes F1, commits, pushes and records the Outcome, then reopen the PR in pr-review to see F1 addressed and mark it done.](docs/media/handoff.gif)
+![Handing Feedback to an agent: send F1 with Hand to agent, run /pull-review in a Claude Code session on the PR's branch to address the feedback, so it fixes the code, commits, pushes and records the Outcome, then reopen the PR in pr-review to see F1 addressed and mark it done.](docs/media/handoff.gif)
 
 After you send, open Claude Code in the PR's checkout, on its branch, and run `/pull-review`. It runs `pr-review export`, which prints your Feedback and the research behind it, and works through the items with you. As it goes, the agent can record what it did:
 

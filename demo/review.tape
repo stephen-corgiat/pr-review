@@ -1,5 +1,6 @@
-# The README demo: review holocron #66, ask for Sample Data and a Definition, write Feedback with an
-# <<example …>> placeholder, let the agent fill it in, send it.
+# The README demo: review acme/bookstore #42 (made up; demo/bookstore.sh builds it), ask for Sample
+# Data and a Definition, write Feedback with an <<example …>> placeholder, let the agent fill it in,
+# send it.
 #
 # Render it with `mise run demo-gif` (see demo/README.md). It replays the
 # recorded agent in demo/recording/, so it's free and the same every time.
@@ -21,11 +22,11 @@ Set TypingSpeed 45ms
 Set WaitTimeout 400s
 
 Hide
-Type "cd $HOLOCRON_DIR && PS1='$ ' && clear" Enter
+Type `export PATH="$DEMO_PATH:$PATH" PS1='$ ' && cd "$DEMO_REPO" && clear` Enter
 Show
 
 # Open the PR; the Briefing arrives.
-Type "pr-review 66"
+Type "pr-review 42"
 Sleep 1500ms
 Enter
 Sleep 1200ms
@@ -33,37 +34,35 @@ Hide
 Wait+Screen /\$0\.(0[1-9]|[1-9])/
 Show
 Sleep 4000ms
-Screenshot docs/media/01-briefing.png
 
-# Open the file with the fix.
-Type "jj"
+# Open the cart, where the code is applied and the Total priced.
+Type "jjj"
 Sleep 400ms
 Enter
 Sleep 1800ms
 
-# Select the streak advance and ask for Sample Data flowing through it.
-Type@20ms "/const nextCount"
+# Select the new Total and ask for Sample Data flowing through it.
+Type@20ms "/subtotal := c.Subtotal"
 Enter
 Sleep 600ms
 Escape
 Sleep 300ms
-Type@40ms "vjjjjjjjjjjjj"
+Type@40ms "vjjjj"
 Sleep 1200ms
 Type "x"
 Sleep 1200ms
 Hide
-Wait+Screen /Sample Data[^\n]*answered/
+Wait+Screen /● 1 new/
 Show
 Type "z"
 Sleep 800ms
 Ctrl+D
 Sleep 4500ms
-Screenshot docs/media/02-sample-data.png
 Type "z"
 Sleep 800ms
 
-# Select the guard and ask what it means.
-Type@20ms "/prior.lastQualifyingDay ==="
+# Select the minimum-subtotal check and ask what it means.
+Type@20ms "/if c.Subtotal() < d.MinSubtotal"
 Enter
 Sleep 600ms
 Escape
@@ -77,7 +76,6 @@ Wait+Screen /Define[^\n]*answered/
 Show
 Type "z"
 Sleep 3500ms
-Screenshot docs/media/03-define.png
 
 # Write Feedback on the same lines, asking for an example.
 Type "kk"
@@ -86,13 +84,12 @@ Type "vjj"
 Sleep 800ms
 Type "f"
 Sleep 600ms
-Type@35ms "Prefer a db guard here rather than comparing in code: <<example using the transactions table and a unique index>>"
+Type@35ms "Removing a book after this check keeps the discount, even below the minimum. Check it when pricing instead: <<example in Total>>"
 Sleep 800ms
 Enter
 Sleep 1200ms
 Type " "
 Sleep 1000ms
-Screenshot docs/media/04-feedback.png
 
 # Refine: the agent writes the example into the Feedback.
 Type "r"
@@ -105,14 +102,12 @@ Ctrl+D
 Sleep 2000ms
 Ctrl+D
 Sleep 2000ms
-Screenshot docs/media/05-revision.png
 Type "A"
 Sleep 1500ms
 
 # Send it.
 Type "P"
 Sleep 1500ms
-Screenshot docs/media/06-send.png
 Tab
 Tab
 Tab

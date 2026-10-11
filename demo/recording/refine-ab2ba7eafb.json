@@ -1,0 +1,72 @@
+{
+  "Request": {
+    "Body": "Removing a book after this check keeps the discount, even below the minimum. Check it when pricing instead: \u003c\u003cexample in Total\u003e\u003e",
+    "Answers": "",
+    "AnchorCode": "84: \tif c.Subtotal() \u003c d.MinSubtotal {\n85: \t\treturn ErrBelowMinimum\n86: \t}\n",
+    "AnchorContext": "",
+    "Round": 1
+  },
+  "Result": {
+    "Revision": {
+      "Text": "This minimum check only runs when the code is applied. A shopper can apply BOOKWORM20 at $60, then remove a book with `DELETE /cart/items/{isbn}` (`Remove`, cart/cart.go:46-53), and still get 20% off below the $50 minimum. Check the minimum when pricing instead. `Total` (cart/cart.go:109-114) gets the discount from `Savings`, and so does the cart view (server/server.go:77), so the check fits best in `Savings`:\n\n```go\nfunc (c *Cart) Savings() Cents {\n\tsubtotal := c.Subtotal()\n\tif c.discount == nil || subtotal \u003c c.discount.MinSubtotal {\n\t\treturn 0\n\t}\n\treturn subtotal * Cents(c.discount.PercentOff) / 100\n}\n```\n\nThat way `Total` drops the discount as soon as the cart falls below the minimum, and puts it back if the shopper adds books again.",
+      "WhatChanged": "Replaced the Agent Note with a Savings example. Added the remove-a-book scenario and line references.",
+      "Questions": null,
+      "Citations": [
+        {
+          "Path": "cart/cart.go",
+          "Line": 84,
+          "EndLine": 86,
+          "URL": "",
+          "Note": ""
+        },
+        {
+          "Path": "cart/cart.go",
+          "Line": 46,
+          "EndLine": 53,
+          "URL": "",
+          "Note": ""
+        },
+        {
+          "Path": "cart/cart.go",
+          "Line": 100,
+          "EndLine": 105,
+          "URL": "",
+          "Note": ""
+        },
+        {
+          "Path": "cart/cart.go",
+          "Line": 109,
+          "EndLine": 114,
+          "URL": "",
+          "Note": ""
+        },
+        {
+          "Path": "server/server.go",
+          "Line": 76,
+          "EndLine": 77,
+          "URL": "",
+          "Note": ""
+        },
+        {
+          "Path": "cart/discount.go",
+          "Line": 27,
+          "EndLine": 0,
+          "URL": "",
+          "Note": ""
+        }
+      ],
+      "Gist": "I replaced the Agent Note with a minimum check. It goes in `Savings` rather than `Total`, so `Total` and the cart view's `savings` field stay consistent.",
+      "BaseBody": "",
+      "Stale": false,
+      "Placeholder": false,
+      "Edited": false,
+      "Round": 0
+    },
+    "Run": {
+      "session_id": "f814aa70-4d5b-4d10-b8d6-0aaad89ad68f",
+      "total_usd": 0.2051238,
+      "duration_ms": 10523,
+      "model": "claude-opus-5-5"
+    }
+  }
+}

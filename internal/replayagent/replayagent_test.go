@@ -2,10 +2,14 @@ package replayagent_test
 
 import (
 	"context"
+	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/stephen-corgiat/pr-review/internal/engine"
+	"github.com/stephen-corgiat/pr-review/internal/forge"
 	"github.com/stephen-corgiat/pr-review/internal/replayagent"
 	"github.com/stephen-corgiat/pr-review/internal/session"
 )
@@ -66,6 +70,31 @@ func TestRecordThenReplay(t *testing.T) {
 	if _, err := rep.Ask(ctx, q); err == nil || !strings.Contains(err.Error(), "no recording") {
 		t.Fatalf("an unrecorded request: %v", err)
 	}
+}
+
+// A forge.json that's there, written by hand for a made-up PR, is served in
+// recording too: the real Forge is only asked when it's missing.
+func TestForgeRecordKeepsForgeJSON(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "forge.json"), []byte(`{"Number": 42, "HeadRef": "discount-codes", "State": "open"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	f := replayagent.Forge{Inner: noForge{}, Dir: dir, Record: true}
+	ctx := context.Background()
+	if pr, err := f.PR(ctx, 42); err != nil || pr.HeadRef != "discount-codes" {
+		t.Fatalf("PR = %+v, %v", pr, err)
+	}
+	if n, err := f.PRForBranch(ctx, "discount-codes"); err != nil || n != 42 {
+		t.Fatalf("PRForBranch = %d, %v", n, err)
+	}
+}
+
+// noForge is a real Forge that can't be reached.
+type noForge struct{ forge.Forge }
+
+func (noForge) PR(context.Context, int) (forge.PR, error) { return forge.PR{}, errors.New("no GitHub") }
+func (noForge) PRForBranch(context.Context, string) (int, error) {
+	return 0, errors.New("no GitHub")
 }
 
 func TestParse(t *testing.T) {

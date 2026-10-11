@@ -1,9 +1,11 @@
-# name  width height x y   (a box of the raw 1100x1300 shot .scratch/shots/NAME.png)
-briefing     775 462  305  28
-selection    775 296  305 205
-define       775 482  305 395
-sample-data  642 832  422 396
-trace        642 752  422 498
-feedback     775 262  305 395
-revision     775 455  305 415
-send         980 425   55 435
+# name  width height x y   (a box of the raw 1600x1800 shot .scratch/shots/NAME.png)
+# Every box is 1100 wide, the width of the GIFs: GitHub scales them all alike, so the
+# text is the same size as the GIFs'. Boxes at x=470 hold a whole 110-column card.
+briefing     1100 1030  375  28
+selection    1100  462  368 433
+define       1100  523  470 555
+sample-data  1100  604  470 1143
+trace        1100  565  470 737
+feedback     1100  441  470 514
+revision     1100  666  470 716
+send         1100  423  245 677
