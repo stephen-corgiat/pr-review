@@ -108,14 +108,10 @@ func applySGR(st lg.Style, params string) lg.Style {
 		case n == 38 || n == 48:
 			var c color.Color
 			if k+2 < len(ps) && ps[k+1] == "5" {
-				v, _ := strconv.Atoi(ps[k+2])
-				c = lg.ANSIColor(v)
+				c = lg.ANSIColor(sgrByte(ps[k+2]))
 				k += 2
 			} else if k+4 < len(ps) && ps[k+1] == "2" {
-				r, _ := strconv.Atoi(ps[k+2])
-				g, _ := strconv.Atoi(ps[k+3])
-				b, _ := strconv.Atoi(ps[k+4])
-				c = color.RGBA{uint8(r), uint8(g), uint8(b), 255}
+				c = color.RGBA{sgrByte(ps[k+2]), sgrByte(ps[k+3]), sgrByte(ps[k+4]), 255}
 				k += 4
 			}
 			if c != nil {
@@ -128,4 +124,11 @@ func applySGR(st lg.Style, params string) lg.Style {
 		}
 	}
 	return st
+}
+
+// sgrByte parses an SGR color component (0–255): too large clamps to 255,
+// malformed reads as 0.
+func sgrByte(s string) uint8 {
+	v, _ := strconv.ParseUint(s, 10, 8)
+	return uint8(v)
 }
