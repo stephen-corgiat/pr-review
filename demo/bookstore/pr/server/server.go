@@ -53,7 +53,7 @@ func (s *Server) withCart(h func(http.ResponseWriter, *http.Request, *cart.Cart)
 			id = newCartID()
 			c = &cart.Cart{}
 			s.carts[id] = c
-			http.SetCookie(w, &http.Cookie{Name: "cart", Value: id, Path: "/"})
+			http.SetCookie(w, &http.Cookie{Name: "cart", Value: id, Path: "/", Secure: true, HttpOnly: true})
 		}
 		h(w, r, c)
 	}
