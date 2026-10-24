@@ -246,6 +246,9 @@ func (m *Model) Init() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
+// Idle reports whether no agent run is queued or running (harness.Idler).
+func (m *Model) Idle() bool { return m.eng.Idle() }
+
 // Note shows a line in the footer for a few seconds after start (settings
 // warnings, a read-only Review Session).
 func (m *Model) Note(s string) { m.startupNote = s }

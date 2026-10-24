@@ -106,9 +106,10 @@ func callersRow(t *testing.T, m *Model, key string, w, h int) string {
 // they say how many, and the Briefing lists the count. TypeScript and Ruby
 // rows are unchanged (scenarios 55 and 56).
 func TestScenario57_CallersRunningThenCounted(t *testing.T) {
+	t.Parallel()
 	s := &stubCallers{release: make(chan struct{}), res: stubResult()}
 	m := newCallersModel(t, s)
-	run(t, m, 140, 45, "wait:1600ms", 50*time.Millisecond)
+	run(t, m, 140, 45, "idle", 50*time.Millisecond)
 	out := callersRow(t, m, keyNewBeacon, 140, 45)
 	mustContain(t, out, "↑ callers  New   callers …", "running")
 	out = callersRow(t, m, "cmd/bounce.go::(*App).BounceWebhook", 140, 45)
@@ -135,6 +136,7 @@ func TestScenario57_CallersRunningThenCounted(t *testing.T) {
 
 // 58. The other states: none, unavailable, and a whole-analysis failure.
 func TestScenario58_CallersNoneAndUnavailable(t *testing.T) {
+	t.Parallel()
 	m := newCallersModel(t, &stubCallers{res: stubResult()})
 	run(t, m, 140, 45, "wait:300ms", 50*time.Millisecond)
 	out := callersRow(t, m, keyVerifyAuth, 140, 45)
@@ -158,6 +160,7 @@ func TestScenario58_CallersNoneAndUnavailable(t *testing.T) {
 // then a sub-row per interface), "… N more" past 20 expands the rest, and
 // enter again collapses it.
 func TestScenario59_ExpandCallers(t *testing.T) {
+	t.Parallel()
 	m := newCallersModel(t, &stubCallers{res: stubResult()})
 	run(t, m, 140, 45, "wait:300ms", 50*time.Millisecond)
 	callersRow(t, m, keyProcess, 140, 45)
@@ -218,6 +221,7 @@ func TestScenario59_ExpandCallers(t *testing.T) {
 // 60. enter on a caller jumps to its line, in the PR's diff or, for a file
 // outside the PR, read-only at the head; Back returns to the method.
 func TestScenario60_JumpToCallerAndBack(t *testing.T) {
+	t.Parallel()
 	m := newCallersModel(t, &stubCallers{res: stubResult()})
 	run(t, m, 140, 45, "wait:300ms", 50*time.Millisecond)
 	callersRow(t, m, keyNewBeacon, 140, 45)
@@ -266,6 +270,7 @@ func TestScenario60_JumpToCallerAndBack(t *testing.T) {
 }
 
 func TestCallersFrameFit(t *testing.T) {
+	t.Parallel()
 	for _, sz := range []struct{ w, h int }{{100, 30}, {200, 50}} {
 		s := &stubCallers{release: make(chan struct{}), res: stubResult()}
 		m := newCallersModel(t, s)

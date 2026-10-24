@@ -52,7 +52,7 @@ func cursorOn(m *Model, i int) {
 // for its Answer: T8.
 func askTraceA04(t *testing.T, m *Model, w, h int) *session.Thread {
 	t.Helper()
-	run(t, m, w, h, `wait:1600ms j j j enter / "ProcessBounce(c" enter esc t`, 6*time.Second)
+	run(t, m, w, h, `idle j j j enter / "ProcessBounce(c" enter esc t idle`, 50*time.Millisecond)
 	t8 := thread(t, m, "T8")
 	if t8.Status != session.StatusAnswered {
 		t.Fatalf("T8 should be answered, got %s", t8.Status)
@@ -63,6 +63,7 @@ func askTraceA04(t *testing.T, m *Model, w, h int) *session.Thread {
 // 20. Answer shape: gist and hops show, the detail stays collapsed until
 // enter; A03's invented values are tagged and dim.
 func TestScenario20_AnswerShape(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
 	t8 := askTraceA04(t, m, 140, 45)
 	m.expandedCards["T8"] = true
@@ -102,13 +103,14 @@ func TestScenario20_AnswerShape(t *testing.T) {
 
 // 21. Research verdict: A08 shows its chip and evidence Citations.
 func TestScenario21_ResearchVerdict(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 140, 45, "wait:1600ms", 50*time.Millisecond)
+	run(t, m, 140, 45, "idle", 50*time.Millisecond)
 	m.gotoLine("cmd/init.go", 13)
 	m.focus = FocusCentre
 	out := run(t, m, 140, 45, "r", 50*time.Millisecond)
 	mustContain(t, out, "Ask (Research)", "Ask… opens on Research")
-	run(t, m, 140, 45, "enter", 6*time.Second)
+	run(t, m, 140, 45, "enter idle", 50*time.Millisecond)
 	t8 := thread(t, m, "T8")
 	m.expandedCards["T8"] = true
 	m.dirty = true
@@ -127,6 +129,7 @@ func TestScenario21_ResearchVerdict(t *testing.T) {
 // 22. Sample this path: x on the Trace Answer asks a Sample Data follow-up
 // answered with the followup-trace-sample fixture.
 func TestScenario22_SampleThisPath(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
 	t8 := askTraceA04(t, m, 140, 45)
 	m.expandedCards["T8"] = true
@@ -135,7 +138,7 @@ func TestScenario22_SampleThisPath(t *testing.T) {
 	if k := t8.Kind; k != session.Trace {
 		t.Fatalf("T8 is %s", k)
 	}
-	run(t, m, 140, 45, "x", 6*time.Second) // ticks only run inside one Run
+	run(t, m, 140, 45, "x idle", 50*time.Millisecond) // ticks only run inside one Run
 	if k := t8.PendingKind(); k != session.SampleData {
 		t.Errorf("follow-up Kind = %s, want Sample Data", k)
 	}
@@ -153,8 +156,9 @@ func TestScenario22_SampleThisPath(t *testing.T) {
 
 // 23. Agent Notes: the seeded Feedback on beacon.go:182-187 shows them.
 func TestScenario23_AgentNotes(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 140, 45, "wait:1600ms j j enter", 50*time.Millisecond)
+	run(t, m, 140, 45, "idle j j enter", 50*time.Millisecond)
 	f1 := feedback(t, m, "F1")
 	cursorOn(m, rowWhere(t, m, "F1's card", func(r Row) bool { return r.Feedback == f1 }))
 	out := run(t, m, 140, 45, "", 50*time.Millisecond)
@@ -178,12 +182,13 @@ func TestScenario23_AgentNotes(t *testing.T) {
 
 // 24. Refine: r on F1, the word diff with what_changed; A replaces the body.
 func TestScenario24_Refine(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 140, 45, "wait:1600ms j j enter", 50*time.Millisecond)
+	run(t, m, 140, 45, "idle j j enter", 50*time.Millisecond)
 	f1 := feedback(t, m, "F1")
 	cursorOn(m, rowWhere(t, m, "F1's card", func(r Row) bool { return r.Feedback == f1 }))
 	// (The harness runs ticks only inside one Run, so r and its wait go together.)
-	run(t, m, 140, 45, "r", 6*time.Second)
+	run(t, m, 140, 45, "r idle", 50*time.Millisecond)
 	if f1.Revision == nil || f1.Revision.Placeholder {
 		t.Fatalf("expected the canned Revision, got %+v", f1.Revision)
 	}
@@ -206,11 +211,12 @@ func TestScenario24_Refine(t *testing.T) {
 
 // 25. Questions back: F4's questions; answering re-runs Refine.
 func TestScenario25_QuestionsBack(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 140, 45, "wait:1600ms j j j enter", 50*time.Millisecond)
+	run(t, m, 140, 45, "idle j j j enter", 50*time.Millisecond)
 	f4 := feedback(t, m, "F4")
 	cursorOn(m, rowWhere(t, m, "F4's card", func(r Row) bool { return r.Feedback == f4 }))
-	run(t, m, 140, 45, "r", 6*time.Second)
+	run(t, m, 140, 45, "r idle", 50*time.Millisecond)
 	q := rowWhere(t, m, "a question", func(r Row) bool {
 		return r.Revision && strings.Contains(r.text(), "Which approach did you have in mind")
 	})
@@ -221,7 +227,7 @@ func TestScenario25_QuestionsBack(t *testing.T) {
 	mustContain(t, out, "answer them", "A on questions explains")
 	out = run(t, m, 140, 45, "enter", 50*time.Millisecond)
 	mustContain(t, out, "Answer the agent", "enter on a question opens the answer box")
-	run(t, m, 140, 45, `"the retry approach from PR 2990" enter`, 6*time.Second)
+	run(t, m, 140, 45, `"the retry approach from PR 2990" enter idle`, 50*time.Millisecond)
 	if f4.Revision == nil || !f4.Revision.Placeholder || len(f4.Revision.Questions) > 0 {
 		t.Fatalf("expected the placeholder Revision, got %+v", f4.Revision)
 	}
@@ -229,11 +235,12 @@ func TestScenario25_QuestionsBack(t *testing.T) {
 
 // 26. Stale: edit while Refine runs; the Revision is Stale and A refuses.
 func TestScenario26_Stale(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 140, 45, "wait:1600ms j j enter", 50*time.Millisecond)
+	run(t, m, 140, 45, "idle j j enter", 50*time.Millisecond)
 	f2 := feedback(t, m, "F2")
 	cursorOn(m, rowWhere(t, m, "F2's card", func(r Row) bool { return r.Feedback == f2 }))
-	run(t, m, 140, 45, `r e " Also a doc line?" enter`, 6*time.Second)
+	run(t, m, 140, 45, `r e " Also a doc line?" enter idle`, 50*time.Millisecond)
 	if !strings.HasSuffix(f2.Body, "Also a doc line?") {
 		t.Fatalf("the edit should save, got %q", f2.Body)
 	}
@@ -252,8 +259,9 @@ func TestScenario26_Stale(t *testing.T) {
 // 27. Send: GitHub is blocked by unfilled notes; Hand to agent queues
 // (and, in fixture mode, says there's no export).
 func TestScenario27_Send(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 140, 45, "wait:1600ms j j enter", 50*time.Millisecond)
+	run(t, m, 140, 45, "idle j j enter", 50*time.Millisecond)
 	f1 := feedback(t, m, "F1")
 	cursorOn(m, rowWhere(t, m, "F1's card", func(r Row) bool { return r.Feedback == f1 }))
 	out := run(t, m, 140, 45, "space P", 50*time.Millisecond)
@@ -292,8 +300,9 @@ func TestScenario27_Send(t *testing.T) {
 
 // 28. With nothing ready, P only flashes.
 func TestScenario28_NothingReady(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	out := run(t, m, 140, 45, "wait:1600ms P", 50*time.Millisecond)
+	out := run(t, m, 140, 45, "idle P", 50*time.Millisecond)
 	mustContain(t, out, "Nothing ready: mark Feedback ready with space", "flash")
 	if m.overlay != OverlayNone {
 		t.Errorf("no dialog when nothing is ready")
@@ -303,8 +312,9 @@ func TestScenario28_NothingReady(t *testing.T) {
 // 29. The export has one ## Research section listing
 // every answered Thread, and no per-item Research.
 func TestScenario29_ExportResearch(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 140, 45, "wait:1600ms j j enter", 50*time.Millisecond)
+	run(t, m, 140, 45, "idle j j enter", 50*time.Millisecond)
 	for _, id := range []string{"F1", "F2"} {
 		toggleReady(t, m, feedback(t, m, id))
 	}
@@ -334,6 +344,7 @@ func TestScenario29_ExportResearch(t *testing.T) {
 
 // Frame fit for the answer views at two terminal sizes.
 func TestAnswersFrameFit(t *testing.T) {
+	t.Parallel()
 	for _, sz := range []struct{ w, h int }{{100, 30}, {200, 50}} {
 		m := newPRModel(t)
 		t8 := askTraceA04(t, m, sz.w, sz.h)
@@ -341,13 +352,13 @@ func TestAnswersFrameFit(t *testing.T) {
 		m.detailOpen["T8#1"] = true
 		m.dirty = true
 		cursorOn(m, rowWhere(t, m, "T8 card", func(r Row) bool { return r.Thread == t8 }))
-		run(t, m, sz.w, sz.h, "x", 6*time.Second)
+		run(t, m, sz.w, sz.h, "x idle", 50*time.Millisecond)
 		run(t, m, sz.w, sz.h, "z", 50*time.Millisecond)
 		m.openFile("internal/bounce/webhooks/beacon.go")
 		m.dirty = true
 		f1 := feedback(t, m, "F1")
 		cursorOn(m, rowWhere(t, m, "F1", func(r Row) bool { return r.Feedback == f1 }))
-		run(t, m, sz.w, sz.h, "r", 6*time.Second)
+		run(t, m, sz.w, sz.h, "r idle", 50*time.Millisecond)
 		cursorOn(m, rowWhere(t, m, "Revision", func(r Row) bool { return r.Revision }))
 		run(t, m, sz.w, sz.h, "", 50*time.Millisecond)
 		cursorOn(m, rowWhere(t, m, "F1", func(r Row) bool { return r.Feedback == f1 && !r.Revision }))

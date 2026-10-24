@@ -12,13 +12,14 @@ import (
 
 func refinedF1(t *testing.T, m *Model) *session.Feedback {
 	t.Helper()
-	run(t, m, 140, 45, "wait:1600ms j j enter", 50*time.Millisecond)
+	run(t, m, 140, 45, "idle j j enter", 50*time.Millisecond)
 	f1 := feedback(t, m, "F1")
 	cursorOn(m, rowWhere(t, m, "F1's card", func(r Row) bool { return r.Feedback == f1 }))
-	run(t, m, 140, 45, "r", 6*time.Second)
+	run(t, m, 140, 45, "r idle", 50*time.Millisecond)
 	if f1.Revision == nil {
 		t.Fatalf("no Revision")
 	}
+	m.flash = "" // "Refine asked" would cover the footer for 2 s
 	return f1
 }
 
@@ -35,6 +36,7 @@ func revisionText(m *Model, f *session.Feedback) string {
 // 36. The Revision shows the revised text, highlights, "words removed"; d
 // toggles the old diff.
 func TestScenario36_RevisionText(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
 	f1 := refinedF1(t, m)
 	cursorOn(m, rowWhere(t, m, "Revision", func(r Row) bool { return r.Revision && strings.Contains(r.text(), "words removed") }))
@@ -56,6 +58,7 @@ func TestScenario36_RevisionText(t *testing.T) {
 
 // 37. e edits the Revision, not the Feedback; A then accepts it.
 func TestScenario37_EditRevision(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
 	f1 := refinedF1(t, m)
 	body := f1.Body
@@ -87,8 +90,9 @@ func TestScenario37_EditRevision(t *testing.T) {
 
 // 38. Undo / redo in the Feedback editor, a word at a time.
 func TestScenario38_Undo(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 140, 45, "wait:1600ms j j enter f", 50*time.Millisecond)
+	run(t, m, 140, 45, "idle j j enter f", 50*time.Millisecond)
 	if m.fbEdit == nil {
 		t.Fatalf("f should open the editor")
 	}
@@ -114,8 +118,9 @@ func TestScenario38_Undo(t *testing.T) {
 
 // 39. The send dialog keeps one height, and works from the keyboard.
 func TestScenario39_SendDialog(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 140, 45, "wait:1600ms", 50*time.Millisecond)
+	run(t, m, 140, 45, "idle", 50*time.Millisecond)
 	f4 := feedback(t, m, "F4") // no Agent Notes
 	toggleReady(t, m, f4)
 	run(t, m, 140, 45, "P", 50*time.Millisecond)
@@ -150,13 +155,14 @@ func TestScenario39_SendDialog(t *testing.T) {
 
 // 40. Sample this path twice: two follow-ups, the second the placeholder.
 func TestScenario40_SampleAgain(t *testing.T) {
-	m := newPRModel(t)
+	t.Parallel()
+	m := newPRModelWith(t, nil) // the last follow-up must still be running
 	t8 := askTraceA04(t, m, 140, 45)
 	m.expandedCards["T8"] = true
 	m.dirty = true
 	for k := 0; k < 2; k++ {
 		cursorOn(m, rowWhere(t, m, "sample row", func(r Row) bool { return r.Thread == t8 && strings.Contains(r.text(), "[sample this path]") }))
-		out := run(t, m, 140, 45, "x", 6*time.Second)
+		out := run(t, m, 140, 45, "x idle", 50*time.Millisecond)
 		mustNotContain(t, out, "busy", "a settled Thread isn't busy")
 	}
 	var qs, fallback int
