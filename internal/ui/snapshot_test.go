@@ -10,6 +10,7 @@ import (
 
 	"github.com/stephen-corgiat/pr-review/internal/app"
 	"github.com/stephen-corgiat/pr-review/internal/engine"
+	"github.com/stephen-corgiat/pr-review/internal/fixtureagent"
 	"github.com/stephen-corgiat/pr-review/internal/fixturerepo"
 	"github.com/stephen-corgiat/pr-review/internal/harness"
 	"github.com/stephen-corgiat/pr-review/internal/session"
@@ -18,10 +19,22 @@ import (
 const fixtureDir = "../../testdata/dispatchly"
 
 // newPRModel opens the fixture PR (dispatchly #214) in fixture mode, with
-// the log in memory.
+// the log in memory and an agent that answers at once: wait for it with
+// the "idle" event.
 func newPRModel(t *testing.T) *Model {
 	t.Helper()
-	eng, _, err := app.Fixture{FixturesDir: fixtureDir, CloneDir: fixturerepo.CacheParent()}.Open()
+	fx, err := fixtureagent.LoadFixtures(fixtureDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return newPRModelWith(t, fixtureagent.New(fx).NoDelay())
+}
+
+// newPRModelWith is newPRModel with agent (nil: the fixture agent with its
+// usual delays, for a run still going when the test looks).
+func newPRModelWith(t *testing.T, agent engine.Agent) *Model {
+	t.Helper()
+	eng, _, err := app.Fixture{FixturesDir: fixtureDir, CloneDir: fixturerepo.CacheParent(), Agent: agent}.Open()
 	if err != nil {
 		t.Fatalf("open: %v", err)
 	}
@@ -141,9 +154,10 @@ func centreRowOf(t *testing.T, m *Model, needle string) int {
 // ---- the core scenarios ----
 
 func TestScenario01_Startup(t *testing.T) {
+	t.Parallel()
 	for _, sz := range []struct{ w, h int }{{100, 30}, {200, 50}} {
 		m := newPRModel(t)
-		out := run(t, m, sz.w, sz.h, "wait:1600ms", 100*time.Millisecond)
+		out := run(t, m, sz.w, sz.h, "idle", 100*time.Millisecond)
 		mustContain(t, out, "TL;DR", "TL;DR heading")
 		mustContain(t, out, "webhooks/beacon.go", "navigator lists beacon.go")
 		// The navigator is in reading order once the Briefing lands:
@@ -165,8 +179,9 @@ func TestScenario01_Startup(t *testing.T) {
 }
 
 func TestScenario02_MethodHeaderRows(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	out := run(t, m, 120, 40, "wait:1600ms j j enter", 200*time.Millisecond)
+	out := run(t, m, 120, 40, "idle j j enter", 200*time.Millisecond)
 	mustContain(t, out, "internal/bounce/webhooks/beacon.go", "centre title shows beacon.go")
 	for i := 0; i < 8 && !strings.Contains(ansi.Strip(out), "func (b *Beacon) ProcessBounce"); i++ {
 		out = run(t, m, 120, 40, "J", 50*time.Millisecond)
@@ -182,14 +197,15 @@ func TestScenario02_MethodHeaderRows(t *testing.T) {
 }
 
 func TestScenario03_DoubleClickDefineCard(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	out := run(t, m, 140, 40, "wait:1600ms j j j enter", 200*time.Millisecond)
+	out := run(t, m, 140, 40, "idle j j j enter", 200*time.Millisecond)
 	x, y := findXY(t, out, "X-Beacon-Event")
 	out = run(t, m, 140, 40, "dclick:"+xy(x+2, y), 100*time.Millisecond)
 	mustContain(t, out, "d Define", "action bar shows after a double-click")
 	out = run(t, m, 140, 40, "d", 100*time.Millisecond)
 	mustContain(t, out, "T8", "the new Thread's card")
-	out = run(t, m, 140, 40, "", 6*time.Second)
+	out = run(t, m, 140, 40, "idle", 50*time.Millisecond)
 	mustContain(t, out, "● new", "answered card shows the unread marker")
 	out = run(t, m, 140, 40, "z", 100*time.Millisecond)
 	mustContain(t, out, "Beacon Relay", "A01's body once expanded")
@@ -198,10 +214,11 @@ func TestScenario03_DoubleClickDefineCard(t *testing.T) {
 // No Probe dialog. The agent runs its Probe in auto mode and the
 // Answer arrives Verified, listing what it ran.
 func TestScenario04_ProbeRunsInAutoMode(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	out := run(t, m, 140, 45, "wait:1600ms j j enter "+strings.Repeat("J ", 7), 200*time.Millisecond)
+	out := run(t, m, 140, 45, "idle j j enter "+strings.Repeat("J ", 7), 200*time.Millisecond)
 	mustContain(t, out, "func mapBeaconStatus", "cursor on mapBeaconStatus")
-	run(t, m, 140, 45, "v "+strings.Repeat("j ", 30)+"x", 6*time.Second)
+	run(t, m, 140, 45, "v "+strings.Repeat("j ", 30)+"x idle", 50*time.Millisecond)
 	t8 := m.sess.ThreadByID("T8")
 	if t8 == nil || t8.Status != session.StatusAnswered {
 		t.Fatalf("T8 should be answered, got %+v", t8)
@@ -225,8 +242,9 @@ func TestScenario04_ProbeRunsInAutoMode(t *testing.T) {
 }
 
 func TestScenario05_TestCasesOnWholeFile(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 140, 45, "wait:1600ms j j c", 6*time.Second)
+	run(t, m, 140, 45, "idle j j c idle", 50*time.Millisecond)
 	// A whole-file Thread's card sits at the top of the file.
 	out := run(t, m, 140, 45, "enter z", 200*time.Millisecond)
 	// An earlier run ran `go test -cover` itself: the table and
@@ -243,8 +261,9 @@ func TestScenario05_TestCasesOnWholeFile(t *testing.T) {
 // The list pane under the navigator jumps to a Thread: its card opens near
 // the top of the centre.
 func TestScenario06_ListJumpsToThread(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	out := run(t, m, 140, 40, "wait:1600ms tab tab", 100*time.Millisecond)
+	out := run(t, m, 140, 40, "idle tab tab", 100*time.Millisecond)
 	mustContain(t, out, "Threads 7", "list pane tab")
 	for i, r := range m.panelRows {
 		if r.Thread != nil && r.Thread.ID == "T2" {
@@ -266,8 +285,9 @@ func TestScenario06_ListJumpsToThread(t *testing.T) {
 }
 
 func TestScenario07_HoldAndSendDrafts(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	out := run(t, m, 140, 40, "wait:1600ms j j enter h d j j j d", 300*time.Millisecond)
+	out := run(t, m, 140, 40, "idle j j enter h d j j j d", 300*time.Millisecond)
 	mustContain(t, out, "HOLD", "header shows HOLD")
 	mustContain(t, out, "○ 4 drafts", "two seeded + two held Drafts")
 	// H sends the held Drafts (S is "Since last review" now).
@@ -276,8 +296,9 @@ func TestScenario07_HoldAndSendDrafts(t *testing.T) {
 }
 
 func TestScenario08_CancelQueuedThread(t *testing.T) {
-	m := newPRModel(t)
-	run(t, m, 140, 40, "wait:1600ms", 0) // Questions wait for the Briefing: they fork from it
+	t.Parallel()
+	m := newPRModelWith(t, nil)   // the Questions must still be running and queued
+	run(t, m, 140, 40, "idle", 0) // Questions wait for the Briefing: they fork from it
 	for _, p := range []string{"cmd/bounce.go", "cmd/init.go", "cmd/settings.go", "internal/bounce/bounce.go"} {
 		ask(t, m, session.Anchor{Type: session.AnchorFile, Path: p}, session.Trace)
 	}
@@ -299,9 +320,10 @@ func TestScenario08_CancelQueuedThread(t *testing.T) {
 }
 
 func TestScenario09_FeedbackAddAndDelete(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
 	// f opens an editor inside a new Feedback card, under the line: no popup.
-	out := run(t, m, 140, 40, "wait:1600ms j j enter f", 200*time.Millisecond)
+	out := run(t, m, 140, 40, "idle j j enter f", 200*time.Millisecond)
 	mustContain(t, out, "F3 · Feedback · new", "in-place editor card")
 	mustContain(t, out, "enter save", "editor hints")
 	if m.overlay != OverlayNone {
@@ -336,21 +358,24 @@ func TestScenario09_FeedbackAddAndDelete(t *testing.T) {
 }
 
 func TestScenario10_CopySelection(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	out := run(t, m, 140, 40, "wait:1600ms j j j enter", 200*time.Millisecond)
+	out := run(t, m, 140, 40, "idle j j j enter", 200*time.Millisecond)
 	x, y := findXY(t, out, "X-Beacon-Event")
 	out = run(t, m, 140, 40, "dclick:"+xy(x+2, y)+" y", 300*time.Millisecond)
 	mustContain(t, out, "Copied 14 chars", "copy flash")
 }
 
 func TestScenario11_FallbackAnswer(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 140, 40, "wait:1600ms j j enter g d", 6*time.Second)
+	run(t, m, 140, 40, "idle j j enter g d idle", 50*time.Millisecond)
 	out := run(t, m, 140, 40, "z", 200*time.Millisecond)
 	mustContain(t, out, "No canned Answer", "fallback Answer")
 }
 
 func TestScenario12_RepoMode(t *testing.T) {
+	t.Parallel()
 	r := fixtureRepo(t)
 	m := newRepoModel(t, r.C0, r.C1)
 	out := run(t, m, 140, 40, "", 100*time.Millisecond)
@@ -364,8 +389,9 @@ func TestScenario12_RepoMode(t *testing.T) {
 
 // Briefing text wraps instead of running off the pane.
 func TestReview_BriefingWraps(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	out := run(t, m, 100, 30, "wait:1600ms", 100*time.Millisecond)
+	out := run(t, m, 100, 30, "idle", 100*time.Millisecond)
 	mustContain(t, out, "no auth.", "the TL;DR's last words are on screen")
 	for _, r := range m.centreRows {
 		if w := cellWidth(r.Prefix) + cellWidth(r.text()) + 1; w > m.centreInner().W {
@@ -377,8 +403,9 @@ func TestReview_BriefingWraps(t *testing.T) {
 // The wheel scrolls a long file all the way, and doesn't snap back to the
 // cursor.
 func TestReview_WheelScrollsLongFile(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 140, 40, "wait:1600ms j j enter E", 100*time.Millisecond)
+	run(t, m, 140, 40, "idle j j enter E", 100*time.Millisecond)
 	in := m.centreInner()
 	wheel := strings.Repeat("wheeldown:"+xy(in.X+10, in.Y+5)+" ", 20)
 	run(t, m, 140, 40, wheel, 50*time.Millisecond)
@@ -398,8 +425,9 @@ func TestReview_WheelScrollsLongFile(t *testing.T) {
 
 // Clicking a Touched Method in the navigator puts it near the top.
 func TestReview_NavMethodOpensNearTop(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	out := run(t, m, 140, 40, "wait:1600ms j j enter", 100*time.Millisecond)
+	out := run(t, m, 140, 40, "idle j j enter", 100*time.Millisecond)
 	x, y := findXY(t, out, "parseBeaconEvents")
 	out = run(t, m, 140, 40, "click:"+xy(x+1, y), 100*time.Millisecond)
 	if off := m.centreCursor - m.centreScroll; off > 4 {
@@ -410,8 +438,9 @@ func TestReview_NavMethodOpensNearTop(t *testing.T) {
 
 // Threads and Feedback on the Description show as cards on the Description.
 func TestReview_DescriptionCards(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	out := run(t, m, 140, 45, "wait:1600ms j enter", 100*time.Millisecond)
+	out := run(t, m, 140, 45, "idle j enter", 100*time.Millisecond)
 	mustContain(t, out, "T6", "seeded Define on internetMessageId shows inline")
 	// Select a word in the description and add Feedback on it.
 	x, y := findXY(t, out, "small")
@@ -425,8 +454,9 @@ func TestReview_DescriptionCards(t *testing.T) {
 
 // Removed lines render, tinted red, with a − sign.
 func TestReview_RemovedLinesShow(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 140, 45, "wait:1600ms", 50*time.Millisecond)
+	run(t, m, 140, 45, "idle", 50*time.Millisecond)
 	m.openFile("cmd/init.go")
 	m.dirty = true
 	m.ensureRows()
@@ -441,8 +471,9 @@ func TestReview_RemovedLinesShow(t *testing.T) {
 // Double-click on a list row jumps to it; double-click on a Feedback card
 // edits it in place.
 func TestReview_DoubleClickOpensThread(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	out := run(t, m, 140, 50, "wait:1600ms", 50*time.Millisecond)
+	out := run(t, m, 140, 50, "idle", 50*time.Millisecond)
 	// T1 is in the list's first five (most urgent first).
 	x, y := findXY(t, out, "T1  bounce.go")
 	out = run(t, m, 140, 50, "dclick:"+xy(x+1, y), 100*time.Millisecond)
@@ -469,8 +500,9 @@ func TestReview_DoubleClickOpensThread(t *testing.T) {
 
 // Clicking a call-graph name jumps to that method.
 func TestReview_CallGraphLinks(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	out := run(t, m, 140, 40, "wait:1600ms j j enter", 100*time.Millisecond)
+	out := run(t, m, 140, 40, "idle j j enter", 100*time.Millisecond)
 	for i := 0; i < 8 && !strings.Contains(ansi.Strip(out), "↓ calls    verifyAuth"); i++ {
 		out = run(t, m, 140, 40, "J", 50*time.Millisecond)
 	}
@@ -484,11 +516,12 @@ func TestReview_CallGraphLinks(t *testing.T) {
 // 13. The list pane shows ten items; on a short terminal the navigator
 // keeps at least eight rows.
 func TestScenario13_ListPaneHeight(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
 	for _, p := range []string{"cmd/bounce.go", "cmd/init.go", "cmd/settings.go", "internal/bounce/bounce.go"} {
 		ask(t, m, session.Anchor{Type: session.AnchorFile, Path: p}, session.Trace)
 	}
-	out := run(t, m, 120, 40, "wait:1600ms", 100*time.Millisecond)
+	out := run(t, m, 120, 40, "idle", 100*time.Millisecond)
 	mustContain(t, out, "Threads 11", "eleven Threads")
 	if in := m.panelInner(); in.H != 10 {
 		t.Errorf("list pane has %d rows at 120×40, want 10", in.H)
@@ -510,7 +543,7 @@ func TestScenario13_ListPaneHeight(t *testing.T) {
 	mustContain(t, out, "1–10 of 11", "the list's scroll note")
 
 	m2 := newPRModel(t)
-	run(t, m2, 100, 24, "wait:1600ms", 100*time.Millisecond)
+	run(t, m2, 100, 24, "idle", 100*time.Millisecond)
 	if h := m2.navInner().H; h < 8 {
 		t.Errorf("navigator has %d rows at 100×24, want ≥ 8", h)
 	}
@@ -522,8 +555,9 @@ func TestScenario13_ListPaneHeight(t *testing.T) {
 // 14. } opens the next file in reading order; J moves to the next Touched
 // Method with its header rule near the top.
 func TestScenario14_FilesAndMethods(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 120, 40, "wait:1600ms", 50*time.Millisecond)
+	run(t, m, 120, 40, "idle", 50*time.Millisecond)
 	order := m.sess.FileOrder()
 	// From the Briefing, { does nothing and } opens the first file.
 	run(t, m, 120, 40, "tab {", 50*time.Millisecond)
@@ -559,8 +593,9 @@ func TestScenario14_FilesAndMethods(t *testing.T) {
 // 15. / searches the centre view: n/M in the footer, n advances, esc clears,
 // smart case.
 func TestScenario15_Search(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 120, 40, "wait:1600ms j j enter", 100*time.Millisecond)
+	run(t, m, 120, 40, "idle j j enter", 100*time.Millisecond)
 	out := run(t, m, 120, 40, `/ "Beacon"`, 50*time.Millisecond)
 	if !m.search.prompt || len(m.search.matches) == 0 {
 		t.Fatalf("typing /Beacon should highlight matches incrementally")
@@ -614,8 +649,9 @@ func TestScenario15_Search(t *testing.T) {
 
 // 16. Back / Forward over jumps.
 func TestScenario16_BackForward(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 120, 40, "wait:1600ms", 50*time.Millisecond)
+	run(t, m, 120, 40, "idle", 50*time.Millisecond)
 	m.centreScroll = centreRowOf(t, m, "Call map")
 	out := run(t, m, 120, 40, "", 50*time.Millisecond)
 	briefScroll := m.centreScroll
@@ -651,8 +687,9 @@ func TestScenario16_BackForward(t *testing.T) {
 
 // 17. Dragging the borders resizes the panes.
 func TestScenario17_Resize(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 120, 40, "wait:1600ms", 50*time.Millisecond)
+	run(t, m, 120, 40, "idle", 50*time.Millisecond)
 	nav0, _, panel0 := m.layout()
 	bx := nav0.W - 1
 	run(t, m, 120, 40, "drag:"+xy(bx, 10)+"-"+xy(bx+10, 10), 50*time.Millisecond)
@@ -710,8 +747,9 @@ func TestScenario17_Resize(t *testing.T) {
 
 // 18. A Question on a two-line Anchor doesn't break the frame.
 func TestScenario18_MultiLineAnchor(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	out := run(t, m, 120, 40, "wait:1600ms G enter", 100*time.Millisecond)
+	out := run(t, m, 120, 40, "idle G enter", 100*time.Millisecond)
 	mustContain(t, out, "docs/swagger/collections.yaml", "the file is open")
 	navRows := func(frame string) []string {
 		nav, _, _ := m.layout()
@@ -754,8 +792,9 @@ func TestScenario18_MultiLineAnchor(t *testing.T) {
 
 // 19. e on a Feedback card edits it in place: the view doesn't move.
 func TestScenario19_EditInPlace(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 140, 45, "wait:1600ms j j enter", 100*time.Millisecond)
+	run(t, m, 140, 45, "idle j j enter", 100*time.Millisecond)
 	card := centreRowOf(t, m, "F1  Feedback")
 	m.centreScroll = card - 12
 	m.centreCursor = card
@@ -802,9 +841,10 @@ func TestScenario19_EditInPlace(t *testing.T) {
 // Frame fit for the core views at two terminal sizes: the method
 // block, search highlights, a hovered and a dragged border, a Back.
 func TestFrameFit(t *testing.T) {
+	t.Parallel()
 	for _, sz := range []struct{ w, h int }{{100, 30}, {200, 50}} {
 		m := newPRModel(t)
-		run(t, m, sz.w, sz.h, "wait:1600ms j j enter J J", 50*time.Millisecond)
+		run(t, m, sz.w, sz.h, "idle j j enter J J", 50*time.Millisecond)
 		out := run(t, m, sz.w, sz.h, `/ "Beacon" enter n`, 50*time.Millisecond)
 		mustContain(t, out, "/Beacon", "search footer")
 		nav, _, _ := m.layout()

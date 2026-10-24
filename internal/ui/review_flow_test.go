@@ -65,6 +65,7 @@ func readyFeedback(t *testing.T, m *Model, path, body string) *session.Feedback 
 // Request changes and Approve are greyed out: the keys skip them and a
 // click only explains.
 func TestScenario48_OwnPRReviewTypes(t *testing.T) {
+	t.Parallel()
 	c := newCalcPR(t, "ana")
 	m := c.m
 	if !m.sess.ReviewerIsAuthor {
@@ -102,6 +103,7 @@ func TestScenario48_OwnPRReviewTypes(t *testing.T) {
 // 49. Posting a review: the dialog says what goes where, Send posts one
 // review through the Forge, and the items become posted.
 func TestScenario49_PostReview(t *testing.T) {
+	t.Parallel()
 	c := newCalcPR(t, "bo")
 	m := c.m
 	f := readyFeedback(t, m, "calc/calc.go", "Name the clamp constant.")
@@ -140,6 +142,7 @@ func calcComments(head string) []forge.Comment {
 // outdated one at the file's top, the general one at the top of the
 // Description; a comment can be an Anchor.
 func TestScenario50_PRComments(t *testing.T) {
+	t.Parallel()
 	c := newCalcPR(t, "bo")
 	c.forge.Comment = calcComments(c.repo.Head)
 	m := c.m
@@ -184,6 +187,7 @@ func TestScenario50_PRComments(t *testing.T) {
 // TUI; the Outcome shows on the card and in the list; D marks it done and
 // O reopens it, whatever the Outcome said.
 func TestScenario51_OutcomesDoneReopen(t *testing.T) {
+	t.Parallel()
 	c := newCalcPR(t, "ana")
 	m := c.m
 	f := readyFeedback(t, m, "calc/calc.go", "Name the clamp constant.")
@@ -248,6 +252,7 @@ func (c *calcPR) push(t *testing.T) string {
 // a hint for local commits that aren't pushed; nothing updates by itself;
 // U updates, and the banner keeps only the unpushed hint.
 func TestScenario52_NewCommitsBanner(t *testing.T) {
+	t.Parallel()
 	c := newCalcPR(t, "ana")
 	m := c.m
 	a := m.sess.PR.HeadSHA
@@ -283,6 +288,7 @@ func TestScenario52_NewCommitsBanner(t *testing.T) {
 // with what they were on; the Briefing is marked Stale until the new one
 // lands; Q asks a Stale Question again at the new head.
 func TestScenario53_StaleDisplay(t *testing.T) {
+	t.Parallel()
 	ag := fixtureagent.New(nil).NoDelay()
 	c := newCalcPRWith(t, "ana", ag)
 	m := c.m
@@ -334,6 +340,7 @@ func TestScenario53_StaleDisplay(t *testing.T) {
 // from; the navigator marks what changed; the Briefing says so in a line;
 // enter on a line opens it in the file.
 func TestScenario54_SinceLastReview(t *testing.T) {
+	t.Parallel()
 	c := newCalcPR(t, "ana")
 	m := c.m
 	out := run(t, m, 140, 45, "S", 100*time.Millisecond)
@@ -381,6 +388,7 @@ func TestScenario54_SinceLastReview(t *testing.T) {
 // Frame fit at 100×30 and 200×50 with these views: the banner, PR
 // Comments, Outcomes, Stale cards, the S view and the help.
 func TestReviewFlowFrameFit(t *testing.T) {
+	t.Parallel()
 	for _, sz := range []struct{ w, h int }{{100, 30}, {200, 50}} {
 		c := newCalcPR(t, "ana")
 		c.forge.Comment = calcComments(c.repo.Head)

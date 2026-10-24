@@ -3,13 +3,17 @@ package ui
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	glamour "charm.land/glamour/v2"
 	"charm.land/glamour/v2/ansi"
 	"charm.land/glamour/v2/styles"
 )
 
-var mdCache = map[string][][]Span{}
+var (
+	mdMu    sync.Mutex
+	mdCache = map[string][][]Span{}
+)
 
 // markdownStyle is glamour's dark style with the document margin removed:
 // our rows supply their own indent.
@@ -27,7 +31,10 @@ func markdownStyle() ansi.StyleConfig {
 func renderMarkdown(body string, width int) [][]Span {
 	width = maxInt(width, 10)
 	key := fmt.Sprintf("%d|%s", width, body)
-	if v, ok := mdCache[key]; ok {
+	mdMu.Lock()
+	v, ok := mdCache[key]
+	mdMu.Unlock()
+	if ok {
 		return v
 	}
 	var out string
@@ -58,7 +65,9 @@ func renderMarkdown(body string, width int) [][]Span {
 	for len(res) > 0 && res[len(res)-1] == nil {
 		res = res[:len(res)-1]
 	}
+	mdMu.Lock()
 	mdCache[key] = res
+	mdMu.Unlock()
 	return res
 }
 

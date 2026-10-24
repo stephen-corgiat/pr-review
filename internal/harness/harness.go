@@ -18,7 +18,19 @@ import (
 type Event struct {
 	Msg  tea.Msg
 	Wait time.Duration
+	// UntilIdle pauses until the model is Idle (see Idler) and no messages
+	// have come in for a moment, or idleCap passes.
+	UntilIdle bool
 }
+
+// Idler is a model that can say whether work it started (an agent run)
+// is still going, so the "idle" event knows when to stop waiting.
+type Idler interface{ Idle() bool }
+
+const (
+	idleQuiet = 20 * time.Millisecond
+	idleCap   = 10 * time.Second
+)
 
 // Run sends a WindowSizeMsg, runs Init, feeds events (pausing briefly after
 // each so commands settle), waits settle, and returns the final model and
@@ -74,6 +86,25 @@ func Run(m tea.Model, w, h int, events []Event, settle time.Duration) (tea.Model
 			}
 		}
 	}
+	waitIdle := func() {
+		deadline := time.After(idleCap)
+		quiet := time.NewTimer(idleQuiet)
+		defer quiet.Stop()
+		for {
+			select {
+			case msg := <-msgs:
+				step(msg)
+				quiet.Reset(idleQuiet)
+			case <-quiet.C:
+				if i, ok := m.(Idler); !ok || i.Idle() {
+					return
+				}
+				quiet.Reset(idleQuiet)
+			case <-deadline:
+				return
+			}
+		}
+	}
 
 	if !r.inited {
 		r.inited = true
@@ -82,6 +113,10 @@ func Run(m tea.Model, w, h int, events []Event, settle time.Duration) (tea.Model
 	step(tea.WindowSizeMsg{Width: w, Height: h})
 	drain(60 * time.Millisecond)
 	for _, ev := range events {
+		if ev.UntilIdle {
+			waitIdle()
+			continue
+		}
 		if ev.Wait > 0 {
 			drain(ev.Wait)
 			continue
@@ -124,6 +159,7 @@ func runnerFor(m tea.Model) *runner {
 //     mouse's Back / Forward buttons), "move:X,Y" (hover, no button). A drag that starts on a pane border
 //     resizes it.
 //   - "wait:500ms"
+//   - "idle": wait until the model is Idle (an agent run has landed)
 func ParseEvents(spec string) ([]Event, error) {
 	var out []Event
 	for _, tok := range tokenize(spec) {
@@ -139,6 +175,8 @@ func ParseEvents(spec string) ([]Event, error) {
 			} else {
 				out = append(out, Event{Msg: tea.BlurMsg{}})
 			}
+		case tok == "idle":
+			out = append(out, Event{UntilIdle: true})
 		case strings.HasPrefix(tok, "wait:"):
 			d, err := time.ParseDuration(strings.TrimPrefix(tok, "wait:"))
 			if err != nil {

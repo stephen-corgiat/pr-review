@@ -24,8 +24,9 @@ func listThreadIDs(m *Model) []string {
 
 // 30. Opening a Thread (marking it read) doesn't move its row.
 func TestScenario30_StableThreadsList(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 140, 45, "wait:1600ms tab tab 1", 50*time.Millisecond)
+	run(t, m, 140, 45, "idle tab tab 1", 50*time.Millisecond)
 	before := listThreadIDs(m)
 	if strings.Join(before, " ") != "T1 T2 T3 T4 T5 T6 T7" {
 		t.Fatalf("the list should be in creation order, got %v", before)
@@ -58,8 +59,9 @@ func TestScenario30_StableThreadsList(t *testing.T) {
 // 31. p is the previous match while a search is on. Otherwise plain p is
 // unbound (the Probe dialog is gone).
 func TestScenario31_SearchP(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 140, 45, "wait:1600ms j j enter", 50*time.Millisecond)
+	run(t, m, 140, 45, "idle j j enter", 50*time.Millisecond)
 	out := run(t, m, 140, 45, `/ "Beacon" enter n n p`, 50*time.Millisecond)
 	n := len(m.search.matches)
 	if m.search.cur != 1 || n < 3 {
@@ -82,8 +84,9 @@ func TestScenario31_SearchP(t *testing.T) {
 
 // 32. alt+left / alt+right are Back / Forward.
 func TestScenario32_AltArrows(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 120, 40, "wait:1600ms", 50*time.Millisecond)
+	run(t, m, 120, 40, "idle", 50*time.Millisecond)
 	m.centreScroll = centreRowOf(t, m, "Call map")
 	out := run(t, m, 120, 40, "", 50*time.Millisecond)
 	briefScroll := m.centreScroll
@@ -117,8 +120,9 @@ func stopHere(m *Model) (line int, method string) {
 
 // 33. ] walks beacon.go's top-level declarations, then crosses files.
 func TestScenario33_ChangesInBeacon(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 140, 45, "wait:1600ms j j enter", 50*time.Millisecond)
+	run(t, m, 140, 45, "idle j j enter", 50*time.Millisecond)
 	beacon := "internal/bounce/webhooks/beacon.go"
 	var methods []string
 	var lines []int
@@ -159,8 +163,9 @@ func TestScenario33_ChangesInBeacon(t *testing.T) {
 
 // 34. ] in cmd/bounce.go: the new case, then the next file; [ comes back to it.
 func TestScenario34_ChangesInBounce(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 140, 45, "wait:1600ms j j j enter", 50*time.Millisecond)
+	run(t, m, 140, 45, "idle j j j enter", 50*time.Millisecond)
 	if m.filePath != "cmd/bounce.go" {
 		t.Fatalf("expected cmd/bounce.go open, got %q", m.filePath)
 	}
@@ -193,6 +198,7 @@ func TestScenario34_ChangesInBounce(t *testing.T) {
 
 // 35. Help: every description starts ≥ 3 columns after its key; it fits.
 func TestScenario35_HelpSpacing(t *testing.T) {
+	t.Parallel()
 	for _, iw := range []int{92, 106} {
 		body := helpBody(iw)
 		for _, sec := range helpSections {
@@ -221,7 +227,7 @@ func TestScenario35_HelpSpacing(t *testing.T) {
 	}
 	for _, sz := range []struct{ w, h int }{{100, 30}, {200, 50}} {
 		m := newPRModel(t)
-		out := run(t, m, sz.w, sz.h, "wait:1600ms ?", 50*time.Millisecond)
+		out := run(t, m, sz.w, sz.h, "idle ?", 50*time.Millisecond)
 		mustContain(t, out, "Keys", "help open")
 		mustContain(t, out, "esc or ? closes", "the footer line is on screen, not clipped")
 		// The help got longer (ran, cost, auto mode): scroll further.

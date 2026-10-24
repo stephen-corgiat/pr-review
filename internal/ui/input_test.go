@@ -29,8 +29,9 @@ func clickOn(t *testing.T, m *Model, w, h int, out, needle string, dx int) strin
 // 41. A click in the in-place Feedback editor places the cursor; no
 // selection starts.
 func TestScenario41_ClickPlacesCursorInFeedback(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 140, 45, "wait:1600ms j j enter j j j", 50*time.Millisecond)
+	run(t, m, 140, 45, "idle j j enter j j j", 50*time.Millisecond)
 	out := run(t, m, 140, 45, `f "hello world"`, 50*time.Millisecond)
 	if m.fbEdit == nil {
 		t.Fatalf("f should open the editor")
@@ -54,8 +55,9 @@ func TestScenario41_ClickPlacesCursorInFeedback(t *testing.T) {
 
 // 42. The Ask box and the Revision editor take clicks too.
 func TestScenario42_ClickPlacesCursorInAskAndRevision(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 140, 45, "wait:1600ms j j enter j j j", 50*time.Millisecond)
+	run(t, m, 140, 45, "idle j j enter j j j", 50*time.Millisecond)
 	out := run(t, m, 140, 45, `r "abc def"`, 50*time.Millisecond)
 	if m.overlay != OverlayTextbox {
 		t.Fatalf("r should open the Ask box")
@@ -84,8 +86,9 @@ func TestScenario42_ClickPlacesCursorInAskAndRevision(t *testing.T) {
 // 43. The send dialog's Summary box has its own background, and a click
 // in it starts editing with the cursor where you clicked.
 func TestScenario43_SummaryBox(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 140, 45, "wait:1600ms", 50*time.Millisecond)
+	run(t, m, 140, 45, "idle", 50*time.Millisecond)
 	toggleReady(t, m, feedback(t, m, "F4"))
 	out := run(t, m, 140, 45, "P", 50*time.Millisecond)
 	tint := bgSeq(bgInput)
@@ -111,8 +114,9 @@ func TestScenario43_SummaryBox(t *testing.T) {
 
 // 44. The footer shows the Review Session's running cost.
 func TestScenario44_CostFooter(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	out := run(t, m, 140, 45, "wait:1600ms", 50*time.Millisecond)
+	out := run(t, m, 140, 45, "idle", 50*time.Millisecond)
 	mustContain(t, out, "$0.00", "no spend in fixture mode")
 	if err := m.eng.Record(session.AnswerArrived{ThreadID: "T1", Answer: session.AnswerBody{Kind: session.Define, Gist: "x"}, Run: session.RunInfo{Cost: 0.4217}}); err != nil {
 		t.Fatal(err)
@@ -124,8 +128,9 @@ func TestScenario44_CostFooter(t *testing.T) {
 
 // 45. The help covers what changed: no Probe key, what ran, cost.
 func TestScenario45_Help(t *testing.T) {
+	t.Parallel()
 	m := newPRModel(t)
-	run(t, m, 200, 50, "wait:1600ms ?", 50*time.Millisecond)
+	run(t, m, 200, 50, "idle ?", 50*time.Millisecond)
 	body := ansi.Strip(strings.Join(helpBody(150), "\n"))
 	for _, s := range []string{"lists what ran", "in the footer", "auto mode", "No Probe dialog", "place the cursor"} {
 		if !strings.Contains(body, s) {
@@ -140,6 +145,7 @@ func TestScenario45_Help(t *testing.T) {
 // 46. A Review Session whose PR was merged after it was created opens
 // read-only: header chip, no Briefing agent, no sending, no asking.
 func TestScenario46_ReadOnlySession(t *testing.T) {
+	t.Parallel()
 	r := testrepo.New(t)
 	f := forge.NewFake("ana", forge.PR{Number: 7, OwnerRepo: "acme/calc", Title: "Clamp results", HeadRef: "feature", BaseRef: "main", HeadSHA: r.Head, BaseSHA: r.Base, State: "open"})
 	data := t.TempDir()
@@ -177,9 +183,10 @@ func TestScenario46_ReadOnlySession(t *testing.T) {
 // 47. Frame fit at 100×30 and 200×50 with these views: the ran list,
 // the send dialog's Summary box, the help.
 func TestInputFrameFit(t *testing.T) {
+	t.Parallel()
 	for _, sz := range []struct{ w, h int }{{100, 30}, {200, 50}} {
 		m := newPRModel(t)
-		run(t, m, sz.w, sz.h, "wait:1600ms", 50*time.Millisecond)
+		run(t, m, sz.w, sz.h, "idle", 50*time.Millisecond)
 		m.openFile("cmd/bounce.go")
 		m.expandedCards["T4"] = true
 		m.dirty = true

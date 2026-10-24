@@ -95,6 +95,7 @@ func sameStops(t *testing.T, what string, got, want []string) {
 // 55. TypeScript and TSX files get method blocks with their call graph;
 // J/K walk the Touched Methods, ]/[ stop on changes and added declarations.
 func TestScenario55_TypeScriptMethods(t *testing.T) {
+	t.Parallel()
 	m := newSampleRepo(t)
 	run(t, m, 140, 45, "", 50*time.Millisecond)
 	for _, p := range []string{"web/calc.ts", "web/panel.tsx"} {
@@ -139,6 +140,7 @@ func TestScenario55_TypeScriptMethods(t *testing.T) {
 // 56. Ruby files too: class methods show as Owner.name, and a class's
 // first method starts at its def (the known gap).
 func TestScenario56_RubyMethods(t *testing.T) {
+	t.Parallel()
 	m := newSampleRepo(t)
 	openAtTop(t, m, "lib/invoice.rb", 140, 45)
 	sameStops(t, "J in invoice.rb", walk(t, m, "lib/invoice.rb", "J"),
@@ -164,6 +166,7 @@ func TestScenario56_RubyMethods(t *testing.T) {
 }
 
 func TestTreeSitter_FrameFit(t *testing.T) {
+	t.Parallel()
 	for _, sz := range []struct{ w, h int }{{100, 30}, {200, 50}} {
 		m := newSampleRepo(t)
 		for _, p := range []string{"web/calc.ts", "web/panel.tsx", "lib/invoice.rb"} {
